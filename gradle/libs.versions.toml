@@ -9,7 +9,7 @@ serialization = "1.8.0"
 coroutines = "1.10.2"
 qodana = "2024.3.4"
 kover = "0.9.1"
-jewels = "0.28.0-243.27100"
+gradleTooling = "9.0.0"
 
 javaWebSocket = "1.5.6"
 javaMDns = "3.5.9"
@@ -29,6 +29,8 @@ kotlin-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coro
 test-junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
 test-opentest4j = { group = "org.opentest4j", name = "opentest4j", version.ref = "opentest4j" }
 test-mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+
+gradle-tooling-api = { group = "org.gradle", name = "gradle-tooling-api", version.ref = "gradleTooling" }
 
 [plugins]
 jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

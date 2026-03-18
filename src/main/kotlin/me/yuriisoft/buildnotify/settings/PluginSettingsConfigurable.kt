@@ -21,42 +21,48 @@ import javax.swing.JComponent
  */
 class PluginSettingsConfigurable : Configurable {
 
-    private val settings: PluginSettings get() = service()
+    private val settings: PluginSettingsState
+        get() = service()
+
     private var panel: DialogPanel? = null
+    private val uiState = PluginSettingsState.State()
 
     override fun getDisplayName(): String =
         BuildNotifyBundle.message("plugin.display.name")
 
     override fun createComponent(): JComponent {
-        val state = settings.state
+        loadUiState()
+
         return panel {
             group(BuildNotifyBundle.message("settings.group.server")) {
                 row(BuildNotifyBundle.message("settings.field.port")) {
                     intTextField(range = 1024..65535)
-                        .bindIntText(state::port)
+                        .bindIntText(uiState::port)
                     comment(BuildNotifyBundle.message("settings.field.port.comment"))
                 }
                 row(BuildNotifyBundle.message("settings.field.service.name")) {
                     textField()
-                        .bindText(state::serviceName)
+                        .bindText(uiState::serviceName)
                     comment(BuildNotifyBundle.message("settings.field.service.name.comment"))
                 }
             }
+
             group(BuildNotifyBundle.message("settings.group.connection")) {
                 row(BuildNotifyBundle.message("settings.field.heartbeat.interval")) {
                     intTextField(range = 5..300)
-                        .bindIntText(state::heartbeatIntervalSec)
+                        .bindIntText(uiState::heartbeatIntervalSec)
                     comment(BuildNotifyBundle.message("settings.field.heartbeat.interval.comment"))
                 }
             }
+
             group(BuildNotifyBundle.message("settings.group.notifications")) {
                 row {
                     checkBox(BuildNotifyBundle.message("settings.field.send.warnings"))
-                        .bindSelected(state::sendWarnings)
+                        .bindSelected(uiState::sendWarnings)
                 }
                 row(BuildNotifyBundle.message("settings.field.max.issues")) {
                     intTextField(range = 1..100)
-                        .bindIntText(state::maxIssuesPerNotification)
+                        .bindIntText(uiState::maxIssuesPerNotification)
                     comment(BuildNotifyBundle.message("settings.field.max.issues.comment"))
                 }
             }
@@ -67,9 +73,20 @@ class PluginSettingsConfigurable : Configurable {
 
     override fun apply() {
         panel?.apply()
+        settings.loadState(uiState.copy())
     }
 
     override fun reset() {
+        loadUiState()
         panel?.reset()
+    }
+
+    private fun loadUiState() {
+        val snapshot = settings.snapshot()
+        uiState.port = snapshot.port
+        uiState.serviceName = snapshot.serviceName
+        uiState.sendWarnings = snapshot.sendWarnings
+        uiState.maxIssuesPerNotification = snapshot.maxIssuesPerNotification
+        uiState.heartbeatIntervalSec = snapshot.heartbeatIntervalSec
     }
 }

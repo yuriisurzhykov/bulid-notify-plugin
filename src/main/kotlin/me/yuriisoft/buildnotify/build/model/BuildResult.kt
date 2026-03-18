@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BuildResult(
-    val id: String,
+    val buildId: String,
     val projectName: String,
     val status: BuildStatus,
     val durationMs: Long,
@@ -13,7 +13,12 @@ data class BuildResult(
     val startedAt: Long,
     val finishedAt: Long,
 ) {
-    val isSuccessful: Boolean get() = status == BuildStatus.SUCCESS
-    val errorCount: Int get() = errors.size
-    val warningCount: Int get() = warnings.size
+    val isSuccessful: Boolean
+        get() = status == BuildStatus.SUCCESS
+
+    val errorCount: Int
+        get() = errors.size
+
+    val warningCount: Int
+        get() = warnings.size
 }

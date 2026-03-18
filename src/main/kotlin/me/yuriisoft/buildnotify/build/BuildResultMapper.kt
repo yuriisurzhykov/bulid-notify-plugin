@@ -3,17 +3,11 @@ package me.yuriisoft.buildnotify.build
 import me.yuriisoft.buildnotify.build.model.BuildIssue
 import me.yuriisoft.buildnotify.build.model.BuildResult
 import me.yuriisoft.buildnotify.build.model.BuildStatus
-import java.util.*
 
-/**
- * Stateless mapper. SRP: assembles a [BuildResult] from already-parsed data.
- *
- * [collectedIssues] arrive pre-parsed by [BuildOutputParser] — no further
- * processing of raw text happens here.
- */
 object BuildResultMapper {
 
     fun map(
+        buildId: String,
         projectName: String,
         status: BuildStatus,
         startedAt: Long,
@@ -22,7 +16,7 @@ object BuildResultMapper {
         val finishedAt = System.currentTimeMillis()
 
         return BuildResult(
-            id = UUID.randomUUID().toString(),
+            buildId = buildId,
             projectName = projectName,
             status = status,
             durationMs = finishedAt - startedAt,

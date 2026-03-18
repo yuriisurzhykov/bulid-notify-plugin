@@ -7,5 +7,5 @@ enum class BuildStatus {
     STARTED,
     SUCCESS,
     FAILED,
-    CANCELLED
+    CANCELLED,
 }

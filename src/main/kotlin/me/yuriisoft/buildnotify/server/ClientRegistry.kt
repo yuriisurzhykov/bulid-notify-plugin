@@ -21,17 +21,21 @@ class ClientRegistry {
         clients[client.id] = client
     }
 
-    fun unregister(client: String) {
-        clients.remove(client)
+    fun unregister(clientId: String?) {
+        if (clientId == null) return
+        clients.remove(clientId)
     }
 
     fun broadcast(message: String) {
         clients.values
-            .filter { session -> session.isOpen }
+            .asSequence()
+            .filter(WebSocketSession::isOpen)
             .forEach { session -> session.send(message) }
     }
 
-    val connectedCount: Int get() = clients.values.count { client -> client.isOpen }
+    val connectedCount: Int
+        get() = clients.values.count(WebSocketSession::isOpen)
 
-    fun isEmpty(): Boolean = clients.isEmpty() || clients.values.all { client -> client.isOpen }
+    fun hasNoOpenClients(): Boolean =
+        clients.values.none(WebSocketSession::isOpen)
 }

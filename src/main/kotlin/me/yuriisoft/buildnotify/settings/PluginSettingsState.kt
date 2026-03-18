@@ -1,16 +1,13 @@
 package me.yuriisoft.buildnotify.settings
 
-import com.intellij.openapi.components.PersistentStateComponent
-import com.intellij.openapi.components.Service
-import com.intellij.openapi.components.State
-import com.intellij.openapi.components.Storage
+import com.intellij.openapi.components.*
 
+@Service(Service.Level.APP)
 @State(
     name = "BuildNotifySettings",
-    storages = [Storage("buildNotifySettings.xml")]
+    storages = [Storage("buildNotifySettings.xml", roamingType = RoamingType.DISABLED)]
 )
-@Service(Service.Level.APP)
-class PluginSettings : PersistentStateComponent<PluginSettings.State> {
+class PluginSettingsState : PersistentStateComponent<PluginSettingsState.State> {
 
     data class State(
         var port: Int = 8765,
@@ -21,6 +18,8 @@ class PluginSettings : PersistentStateComponent<PluginSettings.State> {
     )
 
     private var _state: State = State()
+
+    fun snapshot() = _state.copy()
 
     override fun getState(): State = _state
 

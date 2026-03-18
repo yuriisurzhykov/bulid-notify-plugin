@@ -4,7 +4,7 @@ import com.intellij.openapi.diagnostic.thisLogger
 import kotlinx.coroutines.*
 import me.yuriisoft.buildnotify.serialization.MessageSerializer
 import me.yuriisoft.buildnotify.serialization.WsMessage
-import me.yuriisoft.buildnotify.settings.PluginSettings
+import me.yuriisoft.buildnotify.settings.PluginSettingsState
 
 /**
  * SRP: only sends periodic heartbeats.
@@ -17,32 +17,31 @@ import me.yuriisoft.buildnotify.settings.PluginSettings
  */
 class HeartbeatScheduler(
     private val registry: ClientRegistry,
-    private val settings: PluginSettings,
+    private val settingsProvider: () -> PluginSettingsState.State,
 ) {
     private val logger = thisLogger()
 
-    private val scope = CoroutineScope(
-        SupervisorJob() +
-                Dispatchers.IO +
-                CoroutineName("HeartbeatScheduler") +
-                CoroutineExceptionHandler { _, throwable ->
-                    logger.warn("HeartbeatScheduler: unhandled exception", throwable)
-                }
-    )
-
+    private var scope: CoroutineScope? = null
     private var tickJob: Job? = null
 
     fun start() {
         if (tickJob?.isActive == true) return
 
-        val intervalMs = settings.state.heartbeatIntervalSec * 1_000L
+        val newScope = CoroutineScope(
+            SupervisorJob() +
+                    Dispatchers.IO +
+                    CoroutineName("BuildNotifyHeartbeatScheduler") +
+                    CoroutineExceptionHandler { _, throwable ->
+                        logger.warn("Unhandled heartbeat exception", throwable)
+                    }
+        )
 
-        tickJob = scope.launch {
-            logger.info("Starting heartbeat scheduler... Interval ${intervalMs}ms")
-            delay(intervalMs)
+        scope = newScope
+        tickJob = newScope.launch {
             while (isActive) {
-                tick()
+                val intervalMs = settingsProvider().heartbeatIntervalSec * 1_000L
                 delay(intervalMs)
+                tick()
             }
         }
     }
@@ -50,21 +49,18 @@ class HeartbeatScheduler(
     fun stop() {
         tickJob?.cancel()
         tickJob = null
-        scope.cancel()
-        logger.info("Stopping heartbeat scheduler")
+        scope?.cancel()
+        scope = null
     }
 
     private fun tick() {
-        if (registry.isEmpty()) {
-            logger.debug("Heartbeat skipped: no connected clients.")
-        }
+        if (registry.hasNoOpenClients()) return
 
         runCatching {
             val message = MessageSerializer.encode(WsMessage.Heartbeat())
             registry.broadcast(message)
-            logger.debug("Heartbeat sent to ${registry.connectedCount} client(s).")
-        }.onFailure {
-            logger.warn("Heartbeat scheduler failed to send: ${it.message}", it)
+        }.onFailure { throwable ->
+            logger.warn("Failed to send heartbeat", throwable)
         }
     }
 }

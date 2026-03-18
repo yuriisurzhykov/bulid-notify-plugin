@@ -4,7 +4,6 @@ import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 
 plugins {
     alias(libs.plugins.jetbrains.kotlin.jvm)
-    alias(libs.plugins.jetbrains.kotlin.compose)
     alias(libs.plugins.jetbrains.kotlin.serialization)
     alias(libs.plugins.jetbrains.kotlin.kover)
     alias(libs.plugins.jetbrains.platform)
@@ -35,10 +34,8 @@ dependencies {
         composeUI()
 
         bundledPlugins(
-            "com.intellij.gradle",         // Required for ExternalSystem APIs
-            "org.jetbrains.android",
+            "com.intellij.gradle",
             "org.jetbrains.kotlin",
-            "org.intellij.plugins.markdown",
         )
     }
 
@@ -136,7 +133,7 @@ tasks {
 
     // Ensure changelog is initialized before patching plugin.xml.
     patchPluginXml {
-        dependsOn(initializeChangelog)
+
     }
 
     // When bumping pluginVersion in gradle.properties,

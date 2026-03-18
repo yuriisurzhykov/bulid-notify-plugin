@@ -1,11 +1,13 @@
 package me.yuriisoft.buildnotify
 
-import me.yuriisoft.buildnotify.discovery.MdnsAdvertiser
-import me.yuriisoft.buildnotify.server.BuildWebSocketServer
+import com.intellij.execution.ExecutionManager
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.startup.ProjectActivity
+import me.yuriisoft.buildnotify.build.BuildProgressBridge
+import me.yuriisoft.buildnotify.discovery.MdnsAdvertiser
+import me.yuriisoft.buildnotify.server.BuildWebSocketServer
 
 /**
  * Entry point — runs once per project open.
@@ -29,6 +31,15 @@ class BuildNotifyProjectActivity : ProjectActivity {
             server.start()
             mdns.start()
         }
+
+        val disposable = BuildNotifyPluginDisposable.getInstance(project)
+        val connection = project.messageBus.connect(disposable)
+        val listener = BuildProgressBridge()
+
+        connection.subscribe(
+            ExecutionManager.EXECUTION_TOPIC,
+            listener
+        )
 
         logger.info("BuildNotify ready for project '${project.name}', server active=${server.isActive()}")
     }

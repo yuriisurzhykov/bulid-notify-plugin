@@ -1,11 +1,12 @@
 package me.yuriisoft.buildnotify.server
 
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import me.yuriisoft.buildnotify.serialization.MessageSerializer
 import me.yuriisoft.buildnotify.serialization.WsMessage
-import me.yuriisoft.buildnotify.settings.PluginSettings
+import me.yuriisoft.buildnotify.settings.PluginSettingsState
 import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
 import org.java_websocket.server.WebSocketServer
@@ -22,59 +23,78 @@ import java.util.concurrent.atomic.AtomicBoolean
  * But we pass in predefined dependencies, which means we don't violate DIP.
  */
 @Service(Service.Level.APP)
-class BuildWebSocketServer : AutoCloseable {
+class BuildWebSocketServer : Disposable {
 
     private val logger = thisLogger()
-    private val isRunning = AtomicBoolean(false)
+    private val running = AtomicBoolean(false)
+
     private var server: InternalServer? = null
     private var heartbeatScheduler: HeartbeatScheduler? = null
 
     fun start() {
-        if (isRunning.getAndSet(true)) return
+        if (!running.compareAndSet(false, true)) return
 
-        val settings: PluginSettings = service()
-        val registry: ClientRegistry = service()
+        runCatching {
+            val settings = service<PluginSettingsState>().snapshot()
+            val registry = service<ClientRegistry>()
 
-        val port = settings.state.port
-        server = InternalServer(port, registry).apply {
-            isReuseAddr = true
-            start()
+            server = InternalServer(
+                port = settings.port,
+                registry = registry,
+            ).apply {
+                isReuseAddr = true
+                start()
+            }
+
+            heartbeatScheduler = HeartbeatScheduler(
+                registry = registry,
+                settingsProvider = { service<PluginSettingsState>().snapshot() },
+            ).also { it.start() }
+
+            logger.info("WebSocket server started on port ${settings.port}")
+        }.onFailure { throwable ->
+            running.set(false)
+            heartbeatScheduler?.stop()
+            heartbeatScheduler = null
+            server = null
+            logger.error("Failed to start WebSocket server", throwable)
         }
-        logger.info("WebSocket server started on port $port.")
-
-        heartbeatScheduler = HeartbeatScheduler(registry, settings).also { it.start() }
     }
+
+    fun isActive(): Boolean = running.get()
 
     fun broadcast(message: WsMessage) {
-        val encodedMessage = MessageSerializer.encode(message)
-        val registry: ClientRegistry = service()
-        registry.broadcast(encodedMessage)
+        if (!isActive()) return
+
+        val encoded = MessageSerializer.encode(message)
+        service<ClientRegistry>().broadcast(encoded)
     }
 
-    fun isActive(): Boolean = isRunning.get()
-
-    override fun close() {
+    override fun dispose() {
         heartbeatScheduler?.stop()
-        server?.stop(1000)
+        heartbeatScheduler = null
+
+        runCatching { server?.stop(1_000) }
+            .onFailure { throwable -> logger.warn("Failed to stop WebSocket server cleanly", throwable) }
+
         server = null
-        isRunning.set(false)
-        logger.info("WebSocket server stopped.")
+        running.set(false)
+
+        logger.info("WebSocket server stopped")
     }
 
     private inner class InternalServer(
         port: Int,
         private val registry: ClientRegistry,
     ) : WebSocketServer(InetSocketAddress(port)) {
-        override fun onOpen(
-            conn: WebSocket,
-            handshake: ClientHandshake
-        ) {
+
+        override fun onOpen(conn: WebSocket, handshake: ClientHandshake) {
             val session = WebSocketSession(socket = conn)
             conn.setAttachment(session.id)
             registry.register(session)
+
             logger.info(
-                "Client connected: ${conn.remoteSocketAddress}, " +
-                        "total connected=${registry.connectedCount}"
+                "Client connected: ${conn.remoteSocketAddress}, total=${registry.connectedCount}"
             )
         }
 
@@ -82,34 +102,28 @@ class BuildWebSocketServer : AutoCloseable {
             conn: WebSocket,
             code: Int,
             reason: String?,
-            remote: Boolean
+            remote: Boolean,
         ) {
-            val sessionId = conn.getAttachment<String>()
-            registry.unregister(sessionId)
+            registry.unregister(conn.getAttachment())
+
             logger.info(
-                "Client disconnected: ${conn.remoteSocketAddress}, " +
-                        "reason: $reason, " +
-                        "remote: $remote, " +
-                        "remaining=${registry.connectedCount}"
+                "Client disconnected: ${conn.remoteSocketAddress}, reason=$reason, remote=$remote, remaining=${registry.connectedCount}"
             )
         }
 
         override fun onMessage(conn: WebSocket?, message: String?) {
             runCatching { MessageSerializer.decode(message.orEmpty()) }
-                .onSuccess { handleIncomingMessage(it) }
-                .onFailure { e -> logger.warn("Failed to parse message: '$message'", e) }
+                .onFailure { throwable ->
+                    logger.warn("Failed to decode incoming message: '$message'", throwable)
+                }
         }
 
         override fun onError(conn: WebSocket?, ex: Exception?) {
-            logger.error("WebSocket connection error on ${conn?.remoteSocketAddress}", ex)
+            logger.warn("WebSocket error on ${conn?.remoteSocketAddress}", ex)
         }
 
         override fun onStart() {
-            logger.info("InternalServer onStart()")
-        }
-
-        private fun handleIncomingMessage(message: WsMessage) {
-            logger.debug("InternalServer handleIncomingMessage: $message)")
+            logger.info("Internal WebSocket server is ready")
         }
     }
 }

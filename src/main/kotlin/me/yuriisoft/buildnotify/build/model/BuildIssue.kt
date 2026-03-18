@@ -4,15 +4,16 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class BuildIssue(
-    val filePath: String,
-    val line: Int,
-    val column: Int,
+    val filePath: String? = null,
+    val line: Int? = null,
+    val column: Int? = null,
     val message: String,
     val severity: Severity,
 ) {
 
     @Serializable
     enum class Severity {
-        ERROR, WARNING
+        ERROR,
+        WARNING,
     }
 }
