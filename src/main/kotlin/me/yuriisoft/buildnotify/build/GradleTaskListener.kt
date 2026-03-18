@@ -4,6 +4,7 @@ import com.intellij.openapi.components.service
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationEvent
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListener
+import com.intellij.openapi.externalSystem.model.task.event.ExternalSystemBuildEvent
 import com.intellij.openapi.externalSystem.model.task.event.ExternalSystemTaskExecutionEvent
 
 class GradleTaskListener : ExternalSystemTaskNotificationListener {
@@ -13,8 +14,16 @@ class GradleTaskListener : ExternalSystemTaskNotificationListener {
     }
 
     override fun onStatusChange(event: ExternalSystemTaskNotificationEvent) {
-        if (event is ExternalSystemTaskExecutionEvent) {
-            service<BuildMonitorService>().onTaskExecutionProgress(event)
+        // Здесь мы разделяем высокоуровневые этапы выполнения таски и детальное дерево событий (BuildEvent)
+        when (event) {
+            is ExternalSystemTaskExecutionEvent -> {
+                service<BuildMonitorService>().onTaskExecutionProgress(event)
+            }
+            is ExternalSystemBuildEvent -> {
+                // Именно здесь прячутся FileMessageEvent (ошибки с указанием файла и строки),
+                // StartEvent, FinishEvent и прочие элементы дерева сборки!
+                service<BuildMonitorService>().onBuildProgressEvent(event.id, event.buildEvent)
+            }
         }
     }
 
