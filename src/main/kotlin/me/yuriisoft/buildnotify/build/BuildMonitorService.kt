@@ -1,15 +1,6 @@
 package me.yuriisoft.buildnotify.build
 
-import com.intellij.build.events.BuildEvent
-import com.intellij.build.events.EventResult
-import com.intellij.build.events.FailureResult
-import com.intellij.build.events.FileMessageEvent
-import com.intellij.build.events.FinishBuildEvent
-import com.intellij.build.events.FinishEvent
-import com.intellij.build.events.MessageEvent
-import com.intellij.build.events.OutputBuildEvent
-import com.intellij.build.events.SkippedResult
-import com.intellij.build.events.SuccessResult
+import com.intellij.build.events.*
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
@@ -51,10 +42,7 @@ class BuildMonitorService {
         )
     }
 
-    fun onTaskOutput(
-        taskId: ExternalSystemTaskId,
-        text: String,
-    ) {
+    fun onTaskOutput(taskId: ExternalSystemTaskId, text: String) {
         if (!taskId.isSupportedGradleTask()) return
 
         val session = sessionsByTaskId[taskId] ?: return
@@ -78,8 +66,8 @@ class BuildMonitorService {
         session.externalProgressEvents.add(title)
     }
 
-    fun onBuildProgressEvent(buildId: Any, event: BuildEvent) {
-        val session = sessionsByBuildId[buildId.toString()] ?: return
+    fun onBuildProgressEvent(taskId: ExternalSystemTaskId, event: BuildEvent) {
+        val session = sessionsByTaskId[taskId] ?: return
 
         event.toIssueOrNull()?.let(session.issues::add)
 
@@ -92,8 +80,63 @@ class BuildMonitorService {
             }
         }
 
-        BuildGraphEventMapper.map(buildId, event)
+        logBuildEvent(event)
+        BuildGraphEventMapper.map(taskId, event)
             ?.let(publisher()::publishGraphEvent)
+    }
+
+    private fun logBuildEvent(event: BuildEvent) {
+        when (event) {
+            is FinishEvent -> {
+                val result = event.result
+                logger.warn(
+                    """
+                FINISH:
+                class=${event.javaClass.name}
+                message=${event.message}
+                hint=${event.hint}
+                description=${event.description}
+                resultClass=${result?.javaClass?.name}
+                failures=${(result as? FailureResult)?.failures?.size ?: 0}
+                """.trimIndent()
+                )
+
+                if (result is FailureResult) {
+                    result.failures.forEach { failure ->
+                        logFailure(failure, 0)
+                    }
+                }
+            }
+
+            else -> {
+                logger.warn(
+                    """
+                EVENT:
+                class=${event.javaClass.name}
+                message=${event.message}
+                hint=${event.hint}
+                description=${event.description}
+                """.trimIndent()
+                )
+            }
+        }
+    }
+
+    private fun logFailure(failure: Failure, depth: Int) {
+        val indent = "  ".repeat(depth)
+        logger.warn(
+            """
+        ${indent}FAILURE:
+        ${indent}class=${failure.javaClass.name}
+        ${indent}message=${failure.message}
+        ${indent}description=${failure.description}
+        ${indent}causes=${failure.causes.size}
+        """.trimIndent()
+        )
+
+        failure.causes.forEach { cause ->
+            logFailure(cause, depth + 1)
+        }
     }
 
     fun onSuccess(taskId: ExternalSystemTaskId) {
@@ -103,7 +146,15 @@ class BuildMonitorService {
 
     fun onFailure(taskId: ExternalSystemTaskId, exception: Exception) {
         if (!taskId.isSupportedGradleTask()) return
-        sessionsByTaskId[taskId]?.reportedStatus = BuildStatus.FAILED
+        val session = sessionsByTaskId[taskId] ?: return
+        session.reportedStatus = BuildStatus.FAILED
+
+        session.issues.add(
+            BuildIssue(
+                message = exception.message ?: exception.toString(),
+                severity = BuildIssue.Severity.ERROR
+            )
+        )
         logger.warn("Gradle task failed: ${taskId.type} ${taskId.id}", exception)
     }
 
@@ -176,6 +227,17 @@ class BuildMonitorService {
             .map { it.take(2_000) }
             .toList()
 
+    private fun buildDetailedMessage(message: String?, description: String?): String {
+        val msg = message?.trim()?.takeIf { it.isNotEmpty() } ?: ""
+        val desc = description?.trim()?.takeIf { it.isNotEmpty() } ?: ""
+
+        if (msg.isEmpty() && desc.isEmpty()) return "Unknown build issue"
+        if (msg == desc) return msg
+        if (desc.startsWith(msg)) return desc
+        if (msg.isNotEmpty() && desc.isNotEmpty()) return "$msg\n$desc"
+        return msg.ifEmpty { desc }
+    }
+
     private fun BuildEvent.toIssueOrNull(): BuildIssue? =
         when (this) {
             is FileMessageEvent -> when (kind) {
@@ -183,7 +245,7 @@ class BuildMonitorService {
                     filePath = filePosition.file.path,
                     line = filePosition.startLine,
                     column = filePosition.startColumn,
-                    message = message,
+                    message = buildDetailedMessage(message, description),
                     severity = BuildIssue.Severity.ERROR,
                 )
 
@@ -191,7 +253,7 @@ class BuildMonitorService {
                     filePath = filePosition.file.path,
                     line = filePosition.startLine,
                     column = filePosition.startColumn,
-                    message = message,
+                    message = buildDetailedMessage(message, description),
                     severity = BuildIssue.Severity.WARNING,
                 )
 
@@ -200,12 +262,12 @@ class BuildMonitorService {
 
             is MessageEvent -> when (kind) {
                 MessageEvent.Kind.ERROR -> BuildIssue(
-                    message = message,
+                    message = buildDetailedMessage(message, description),
                     severity = BuildIssue.Severity.ERROR,
                 )
 
                 MessageEvent.Kind.WARNING -> BuildIssue(
-                    message = message,
+                    message = buildDetailedMessage(message, description),
                     severity = BuildIssue.Severity.WARNING,
                 )
 
@@ -234,9 +296,9 @@ class BuildMonitorService {
     ): BuildIssue? =
         when (result) {
             is FailureResult -> {
-                val failureMessage = result.failures
-                    .firstOrNull()
-                    ?.message
+                val failure = result.failures.firstOrNull()
+                // Достаем description из FailureResult — там может лежать StackTrace
+                val failureMessage = failure?.let { buildDetailedMessage(it.message, it.description) }
                     ?.takeIf { it.isNotBlank() }
                     ?: fallbackMessage
 

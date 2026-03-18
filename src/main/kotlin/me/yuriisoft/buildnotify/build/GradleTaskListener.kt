@@ -14,11 +14,12 @@ class GradleTaskListener : ExternalSystemTaskNotificationListener {
     }
 
     override fun onStatusChange(event: ExternalSystemTaskNotificationEvent) {
-        // Здесь мы разделяем высокоуровневые этапы выполнения таски и детальное дерево событий (BuildEvent)
+        // Here we separate high-level task execution stages from detailed build event tree (BuildEvent)!
         when (event) {
             is ExternalSystemTaskExecutionEvent -> {
                 service<BuildMonitorService>().onTaskExecutionProgress(event)
             }
+
             is ExternalSystemBuildEvent -> {
                 // Именно здесь прячутся FileMessageEvent (ошибки с указанием файла и строки),
                 // StartEvent, FinishEvent и прочие элементы дерева сборки!

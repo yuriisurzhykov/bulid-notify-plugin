@@ -1,17 +1,6 @@
 package me.yuriisoft.buildnotify.build
 
-import com.intellij.build.events.BuildEvent
-import com.intellij.build.events.EventResult
-import com.intellij.build.events.FailureResult
-import com.intellij.build.events.FileMessageEvent
-import com.intellij.build.events.FinishBuildEvent
-import com.intellij.build.events.FinishEvent
-import com.intellij.build.events.MessageEvent
-import com.intellij.build.events.OutputBuildEvent
-import com.intellij.build.events.StartBuildEvent
-import com.intellij.build.events.StartEvent
-import com.intellij.build.events.SuccessResult
-import com.intellij.build.events.SkippedResult
+import com.intellij.build.events.*
 import me.yuriisoft.buildnotify.build.model.BuildGraphEvent
 
 object BuildGraphEventMapper {
@@ -47,6 +36,7 @@ object BuildGraphEventMapper {
                 parentNodeId = parentNodeId,
                 eventType = BuildGraphEvent.EventType.FILE_MESSAGE,
                 title = event.message,
+                message = event.description,
                 severity = event.kind.toSeverity(),
                 filePath = event.filePosition.file.path,
                 line = event.filePosition.startLine,
@@ -59,6 +49,7 @@ object BuildGraphEventMapper {
                 parentNodeId = parentNodeId,
                 eventType = BuildGraphEvent.EventType.MESSAGE,
                 title = event.message,
+                message = event.description,
                 severity = event.kind.toSeverity(),
             )
 
