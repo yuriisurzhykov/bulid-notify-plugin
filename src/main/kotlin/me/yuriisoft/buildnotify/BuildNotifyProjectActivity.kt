@@ -38,8 +38,9 @@ class BuildNotifyProjectActivity : ProjectActivity {
 
         val buildProgressListener = BuildProgressListener { buildId, event: BuildEvent ->
             service<BuildMonitorService>().onBuildProgressEvent(
+                project.basePath,
                 buildId,
-                event
+                event,
             )
         }
 

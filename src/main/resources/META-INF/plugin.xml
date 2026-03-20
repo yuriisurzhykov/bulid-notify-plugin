@@ -43,6 +43,11 @@
     <extensions defaultExtensionNs="com.intellij">
         <postStartupActivity implementation="me.yuriisoft.buildnotify.BuildNotifyProjectActivity"/>
         <applicationService serviceImplementation="me.yuriisoft.buildnotify.settings.PluginSettingsState"/>
+        <applicationService serviceImplementation="me.yuriisoft.buildnotify.network.server.BuildWebSocketServer"/>
+        <applicationService serviceImplementation="me.yuriisoft.buildnotify.network.discovery.MdnsAdvertiser"/>
+        <applicationService serviceImplementation="me.yuriisoft.buildnotify.network.server.ClientRegistry"/>
+        <applicationService serviceImplementation="me.yuriisoft.buildnotify.build.BuildMonitorService"/>
+        <applicationService serviceImplementation="me.yuriisoft.buildnotify.build.BuildNotificationPublishService"/>
 
         <!--
             ExternalSystemTaskNotificationListener registered as EP.

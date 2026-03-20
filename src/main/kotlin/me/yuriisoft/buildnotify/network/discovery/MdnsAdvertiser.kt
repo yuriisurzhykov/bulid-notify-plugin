@@ -47,10 +47,13 @@ class MdnsAdvertiser : Disposable {
         }
     }
 
-    override fun dispose() {
+    fun stop() {
         runCatching { jmDNS.getAndSet(null)?.close() }
             .onFailure { throwable -> logger.warn("Failed to stop mDNS advertiser cleanly", throwable) }
-
         started.set(false)
+    }
+
+    override fun dispose() {
+        stop()
     }
 }

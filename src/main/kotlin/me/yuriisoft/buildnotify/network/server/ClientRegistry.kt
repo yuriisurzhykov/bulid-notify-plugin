@@ -27,10 +27,16 @@ class ClientRegistry {
     }
 
     fun broadcast(message: String) {
+        removeClosedSessions()
         clients.values
             .asSequence()
             .filter(WebSocketSession::isOpen)
             .forEach { session -> session.send(message) }
+    }
+
+    private fun removeClosedSessions() {
+        val dead = clients.entries.filter { !it.value.isOpen }.map { it.key }
+        dead.forEach { clients.remove(it) }
     }
 
     val connectedCount: Int

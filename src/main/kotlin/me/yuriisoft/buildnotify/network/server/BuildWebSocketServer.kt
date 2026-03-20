@@ -11,7 +11,10 @@ import org.java_websocket.WebSocket
 import org.java_websocket.handshake.ClientHandshake
 import org.java_websocket.server.DefaultSSLWebSocketServerFactory
 import org.java_websocket.server.WebSocketServer
+import java.io.InputStream
 import java.net.InetSocketAddress
+import java.nio.file.Files
+import java.nio.file.Path
 import java.security.KeyStore
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.net.ssl.KeyManagerFactory
@@ -45,6 +48,7 @@ class BuildWebSocketServer : Disposable {
             server = InternalWebSocketServer(
                 port = settings.port,
                 registry = registry,
+                settings = settings,
             ).apply {
                 isReuseAddr = true
                 connectionLostTimeout = settings.connectionLostTimeoutSec
@@ -75,7 +79,7 @@ class BuildWebSocketServer : Disposable {
         service<ClientRegistry>().broadcast(encoded)
     }
 
-    override fun dispose() {
+    fun stop() {
         heartbeatScheduler?.stop()
         heartbeatScheduler = null
 
@@ -88,13 +92,18 @@ class BuildWebSocketServer : Disposable {
         logger.info("WebSocket server stopped")
     }
 
+    override fun dispose() {
+        stop()
+    }
+
     private inner class InternalWebSocketServer(
         port: Int,
         private val registry: ClientRegistry,
+        private val settings: PluginSettingsState.State,
     ) : WebSocketServer(InetSocketAddress(port)) {
 
         init {
-            setupSSL()
+            setupSSL(port)
         }
 
         override fun onOpen(conn: WebSocket, handshake: ClientHandshake) {
@@ -103,7 +112,7 @@ class BuildWebSocketServer : Disposable {
             registry.register(session)
 
             logger.info(
-                "Client connected: ${conn.remoteSocketAddress}, total=${registry.connectedCount}"
+                "Client connected: ${conn.remoteSocketAddress}, total=${registry.connectedCount}",
             )
         }
 
@@ -116,7 +125,7 @@ class BuildWebSocketServer : Disposable {
             registry.unregister(conn.getAttachment())
 
             logger.info(
-                "Client disconnected: ${conn.remoteSocketAddress}, reason=$reason, remote=$remote, remaining=${registry.connectedCount}"
+                "Client disconnected: ${conn.remoteSocketAddress}, reason=$reason, remote=$remote, remaining=${registry.connectedCount}",
             )
         }
 
@@ -136,26 +145,59 @@ class BuildWebSocketServer : Disposable {
             logger.info("Internal WebSocket server is ready")
         }
 
-        private fun setupSSL() {
-            try {
-                val keystoreStream = javaClass.classLoader.getResourceAsStream("keystore.jks")
-                    ?: throw IllegalStateException("File keystore.jks not found in plugin resources.")
-
-                val keyStore = KeyStore.getInstance("JKS")
-                keyStore.load(keystoreStream, "password".toCharArray())
-
-                val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
-                keyManagerFactory.init(keyStore, "password".toCharArray())
-
-                val sslContext = SSLContext.getInstance("TLS")
-                sslContext.init(keyManagerFactory.keyManagers, null, null)
-
-                setWebSocketFactory(DefaultSSLWebSocketServerFactory(sslContext))
-
-                logger.info("SSL (WSS) successfully configured. Server will accept secure connections on port $port.")
-            } catch (e: Exception) {
-                logger.error("Failed to configure WSS. Server will fall back to insecure WS protocol on port $port.", e)
+        private fun setupSSL(port: Int) {
+            val password = System.getenv("BUILDNOTIFY_KEYSTORE_PASSWORD")?.trim()?.toCharArray()
+            if (password == null || password.isEmpty()) {
+                logger.info(
+                    "WSS disabled: set environment variable BUILDNOTIFY_KEYSTORE_PASSWORD to enable TLS (plain WS only on port $port).",
+                )
+                return
             }
+
+            val stream = openKeystoreStream() ?: run {
+                logger.info(
+                    "WSS disabled: no keystore file (settings path, BUILDNOTIFY_KEYSTORE_PATH, or resource keystore.jks). WS on port $port.",
+                )
+                return
+            }
+
+            stream.use { keystoreStream ->
+                runCatching {
+                    val keyStore = KeyStore.getInstance("JKS")
+                    keyStore.load(keystoreStream, password)
+
+                    val keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm())
+                    keyManagerFactory.init(keyStore, password)
+
+                    val sslContext = SSLContext.getInstance("TLS")
+                    sslContext.init(keyManagerFactory.keyManagers, null, null)
+
+                    setWebSocketFactory(DefaultSSLWebSocketServerFactory(sslContext))
+                    logger.info("SSL (WSS) configured; secure connections accepted on port $port.")
+                }.onFailure { e ->
+                    logger.info("WSS not enabled; using WS only on port $port: ${e.message}")
+                }
+            }
+        }
+
+        private fun openKeystoreStream(): InputStream? {
+            val configured = settings.keystorePath.trim()
+            if (configured.isNotEmpty()) {
+                val p = Path.of(configured)
+                if (Files.isRegularFile(p)) {
+                    return Files.newInputStream(p)
+                }
+                logger.warn("Keystore path from settings does not exist or is not a file: $configured")
+            }
+            val envPath = System.getenv("BUILDNOTIFY_KEYSTORE_PATH")?.trim().orEmpty()
+            if (envPath.isNotEmpty()) {
+                val p = Path.of(envPath)
+                if (Files.isRegularFile(p)) {
+                    return Files.newInputStream(p)
+                }
+                logger.warn("BUILDNOTIFY_KEYSTORE_PATH does not exist or is not a file: $envPath")
+            }
+            return javaClass.classLoader.getResourceAsStream("keystore.jks")
         }
     }
 }

@@ -1,13 +1,18 @@
 package me.yuriisoft.buildnotify.settings
 
-import com.intellij.openapi.components.service
+import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.Configurable
+import com.intellij.openapi.project.ProjectManager
 import com.intellij.openapi.ui.DialogPanel
+import com.intellij.ui.dsl.builder.AlignX
 import com.intellij.ui.dsl.builder.bindIntText
 import com.intellij.ui.dsl.builder.bindSelected
 import com.intellij.ui.dsl.builder.bindText
 import com.intellij.ui.dsl.builder.panel
+import com.intellij.openapi.components.service
 import me.yuriisoft.buildnotify.BuildNotifyBundle
+import me.yuriisoft.buildnotify.network.discovery.MdnsAdvertiser
+import me.yuriisoft.buildnotify.network.server.BuildWebSocketServer
 import javax.swing.JComponent
 
 /**
@@ -45,6 +50,18 @@ class PluginSettingsConfigurable : Configurable {
                         .bindText(uiState::serviceName)
                     comment(BuildNotifyBundle.message("settings.field.service.name.comment"))
                 }
+                row(BuildNotifyBundle.message("settings.field.keystore.path")) {
+                    textFieldWithBrowseButton(
+                        fileChooserDescriptor = FileChooserDescriptorFactory.createSingleFileDescriptor()
+                            .withTitle(BuildNotifyBundle.message("settings.field.keystore.browse.title")),
+                        project = ProjectManager.getInstance().defaultProject,
+                        fileChosen = { it.path },
+                    )
+                        .bindText(uiState::keystorePath)
+                        .align(AlignX.FILL)
+                        .resizableColumn()
+                    comment(BuildNotifyBundle.message("settings.field.keystore.path.comment"))
+                }
             }
 
             group(BuildNotifyBundle.message("settings.group.connection")) {
@@ -57,6 +74,11 @@ class PluginSettingsConfigurable : Configurable {
                     intTextField(range = 5..300)
                         .bindIntText(uiState::connectionLostTimeoutSec)
                     comment(BuildNotifyBundle.message("settings.field.connection.lost.timeout.comment"))
+                }
+                row(BuildNotifyBundle.message("settings.field.session.timeout")) {
+                    intTextField(range = 1..24 * 60)
+                        .bindIntText(uiState::sessionTimeoutMinutes)
+                    comment(BuildNotifyBundle.message("settings.field.session.timeout.comment"))
                 }
             }
 
@@ -78,7 +100,26 @@ class PluginSettingsConfigurable : Configurable {
 
     override fun apply() {
         panel?.apply()
+        val previous = settings.snapshot()
         settings.loadState(uiState.copy())
+        val updated = settings.snapshot()
+
+        val serverNeedsRestart =
+            previous.port != updated.port ||
+                previous.connectionLostTimeoutSec != updated.connectionLostTimeoutSec ||
+                previous.keystorePath != updated.keystorePath
+        val mdnsNeedsRestart =
+            previous.port != updated.port ||
+                previous.serviceName != updated.serviceName
+
+        if (serverNeedsRestart || mdnsNeedsRestart) {
+            val server = service<BuildWebSocketServer>()
+            val mdns = service<MdnsAdvertiser>()
+            if (serverNeedsRestart) server.stop()
+            if (mdnsNeedsRestart) mdns.stop()
+            if (serverNeedsRestart) server.start()
+            if (mdnsNeedsRestart) mdns.start()
+        }
     }
 
     override fun reset() {
@@ -93,5 +134,8 @@ class PluginSettingsConfigurable : Configurable {
         uiState.sendWarnings = snapshot.sendWarnings
         uiState.maxIssuesPerNotification = snapshot.maxIssuesPerNotification
         uiState.heartbeatIntervalSec = snapshot.heartbeatIntervalSec
+        uiState.connectionLostTimeoutSec = snapshot.connectionLostTimeoutSec
+        uiState.sessionTimeoutMinutes = snapshot.sessionTimeoutMinutes
+        uiState.keystorePath = snapshot.keystorePath
     }
 }

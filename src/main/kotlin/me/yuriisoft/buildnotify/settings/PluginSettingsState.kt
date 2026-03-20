@@ -16,6 +16,10 @@ class PluginSettingsState : PersistentStateComponent<PluginSettingsState.State> 
         var maxIssuesPerNotification: Int = 20,
         var heartbeatIntervalSec: Int = 30,
         var connectionLostTimeoutSec: Int = 30,
+        /** Drop build sessions with no finish event after this many minutes. */
+        var sessionTimeoutMinutes: Int = 30,
+        /** Optional absolute path to a JKS keystore; empty = try classpath `keystore.jks` or env `BUILDNOTIFY_KEYSTORE_PATH`. */
+        var keystorePath: String = "",
     )
 
     private var _state: State = State()

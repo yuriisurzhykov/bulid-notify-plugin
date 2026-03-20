@@ -2,12 +2,16 @@ package me.yuriisoft.buildnotify
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
+import com.intellij.openapi.components.service
 import com.intellij.openapi.project.Project
+import me.yuriisoft.buildnotify.build.BuildMonitorService
 
 @Service(Service.Level.PROJECT)
-class BuildNotifyPluginDisposable : Disposable {
+class BuildNotifyPluginDisposable(private val project: Project) : Disposable {
+
     override fun dispose() {
-        // Automatically called when the project is closed
+        val basePath = project.basePath ?: return
+        service<BuildMonitorService>().clearSessionsForProject(basePath)
     }
 
     companion object {

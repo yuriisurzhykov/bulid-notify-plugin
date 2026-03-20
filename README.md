@@ -115,3 +115,23 @@ manually via UI.
 [jb:ipe]: https://jb.gg/ipe
 
 [jb:ui-guidelines]: https://jetbrains.github.io/ui
+
+---
+
+## Build Notifier — WebSocket Secure (WSS)
+
+The plugin serves plain **WS** by default. To enable **WSS** for local clients:
+
+1. Create a JKS keystore (example for development only):
+
+   ```bash
+   keytool -genkeypair -alias buildnotify -keyalg RSA -keysize 2048 -storetype JKS \
+     -keystore keystore.jks -validity 3650 -storepass YOUR_PASSWORD -keypass YOUR_PASSWORD \
+     -dname "CN=localhost, OU=Dev, O=Dev, L=City, ST=State, C=US"
+   ```
+
+2. Either copy `keystore.jks` into `src/main/resources/` for your **local** builds (the file is gitignored), or set **`BUILDNOTIFY_KEYSTORE_PATH`** to an absolute path, or set the keystore path in **Settings → Tools → Build Notifier**.
+
+3. Set the environment variable **`BUILDNOTIFY_KEYSTORE_PASSWORD`** to the keystore password before starting the IDE (the password is not stored in plugin settings).
+
+If the password or keystore is missing, the server stays on **WS** only and logs an info message.

@@ -1,11 +1,13 @@
 package me.yuriisoft.buildnotify.build
 
 import com.intellij.build.events.*
+import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.components.service
 import com.intellij.openapi.diagnostic.thisLogger
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId
 import com.intellij.openapi.externalSystem.model.task.event.ExternalSystemTaskExecutionEvent
+import kotlinx.coroutines.*
 import me.yuriisoft.buildnotify.build.mapper.BuildGraphEventMapper
 import me.yuriisoft.buildnotify.build.mapper.BuildResultMapper
 import me.yuriisoft.buildnotify.build.model.BuildIssue
@@ -14,107 +16,204 @@ import me.yuriisoft.buildnotify.settings.PluginSettingsState
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 @Service(Service.Level.APP)
-class BuildMonitorService {
+class BuildMonitorService : Disposable {
 
     private val logger = thisLogger()
 
     private val sessionsByBuildId = ConcurrentHashMap<String, BuildSession>()
+    private val locksByBuildId = ConcurrentHashMap<String, ReentrantLock>()
+    private val cleanupStarted = AtomicBoolean(false)
+    private val cleanupJob = SupervisorJob()
+    private val cleanupScope = CoroutineScope(cleanupJob + Dispatchers.Default)
+
+    private fun lockFor(buildId: String): ReentrantLock =
+        locksByBuildId.computeIfAbsent(buildId) { ReentrantLock() }
+
+    private inline fun <T> withBuildLock(buildId: String, block: () -> T): T =
+        lockFor(buildId).withLock(block)
+
+    private fun sessionTimeoutMs(): Long {
+        val minutes = service<PluginSettingsState>().snapshot().sessionTimeoutMinutes.coerceAtLeast(1)
+        return minutes * 60_000L
+    }
+
+    private fun normalizeProjectPath(path: String): String? {
+        val p = path.trim()
+        if (p.isEmpty()) return null
+        return runCatching { Path.of(p).normalize().toString() }.getOrNull()
+    }
+
+    fun clearSessionsForProject(projectBasePath: String) {
+        val normalized = normalizeProjectPath(projectBasePath) ?: return
+        val ids = sessionsByBuildId.entries
+            .filter { normalizeProjectPath(it.value.projectPath) == normalized }
+            .map { it.key }
+        for (buildId in ids) {
+            withBuildLock(buildId) {
+                val session = sessionsByBuildId[buildId] ?: return@withBuildLock
+                if (normalizeProjectPath(session.projectPath) == normalized) {
+                    sessionsByBuildId.remove(buildId)
+                }
+            }
+        }
+    }
+
+    private fun ensureCleanupRunning() {
+        if (!cleanupStarted.compareAndSet(false, true)) return
+        cleanupScope.launch {
+            while (isActive) {
+                delay(60_000)
+                purgeStaleSessions()
+            }
+        }
+    }
+
+    private fun purgeStaleSessions() {
+        val ids = sessionsByBuildId.keys.toList()
+        val timeoutMs = sessionTimeoutMs()
+        val now = System.currentTimeMillis()
+        for (buildId in ids) {
+            withBuildLock(buildId) {
+                val session = sessionsByBuildId[buildId] ?: return@withBuildLock
+                if (now - session.startedAt <= timeoutMs) return@withBuildLock
+                session.reportedStatus = BuildStatus.CANCELLED
+                finalizeSessionLocked(buildId)
+            }
+        }
+    }
+
+    /** If session exists and is past timeout, finalizes as cancelled. Call only while holding [buildId] lock. */
+    private fun evictIfStaleUnderLock(buildId: String) {
+        val session = sessionsByBuildId[buildId] ?: return
+        if (System.currentTimeMillis() - session.startedAt <= sessionTimeoutMs()) return
+        session.reportedStatus = BuildStatus.CANCELLED
+        finalizeSessionLocked(buildId)
+    }
 
     fun onStart(projectPath: String, taskId: ExternalSystemTaskId) {
         getOrCreateSession(
             buildId = taskId.toString(),
             projectName = projectNameFrom(projectPath),
-            startedAt = System.currentTimeMillis()
+            projectPath = projectPath,
+            startedAt = System.currentTimeMillis(),
         )
     }
 
-    private fun getOrCreateSession(buildId: String, projectName: String, startedAt: Long): BuildSession {
-        return sessionsByBuildId.getOrPut(buildId) {
+    private fun getOrCreateSession(buildId: String, projectName: String, projectPath: String, startedAt: Long) {
+        withBuildLock(buildId) {
+            evictIfStaleUnderLock(buildId)
+            if (sessionsByBuildId.containsKey(buildId)) return@withBuildLock
             val newSession = BuildSession(
                 buildId = buildId,
                 projectName = projectName,
-                startedAt = startedAt
+                projectPath = projectPath,
+                startedAt = startedAt,
             )
+            sessionsByBuildId[buildId] = newSession
             publisher().publishStarted(
                 projectName = newSession.projectName,
                 buildId = newSession.buildId,
             )
-            newSession
+            ensureCleanupRunning()
         }
     }
 
     fun onTaskOutput(taskId: ExternalSystemTaskId, text: String) {
-        val session = sessionsByBuildId[taskId.toString()] ?: return
-        val lines = normalizeOutput(text)
-        if (lines.isEmpty()) return
-
-        lines.forEach { line ->
-            session.rawOutput.add(line)
+        val id = taskId.toString()
+        withBuildLock(id) {
+            evictIfStaleUnderLock(id)
+            val session = sessionsByBuildId[id] ?: return@withBuildLock
+            val lines = normalizeOutput(text)
+            if (lines.isEmpty()) return@withBuildLock
+            lines.forEach { line -> session.rawOutput.add(line) }
         }
     }
 
     fun onTaskExecutionProgress(event: ExternalSystemTaskExecutionEvent) {
-        val session = sessionsByBuildId[event.id.toString()] ?: return
-
-        val title = event.progressEvent.displayName
-            .takeIf { it.isNotBlank() }
-            ?: event.progressEvent.descriptor.displayName
+        val id = event.id.toString()
+        withBuildLock(id) {
+            evictIfStaleUnderLock(id)
+            val session = sessionsByBuildId[id] ?: return@withBuildLock
+            val title = event.progressEvent.displayName
                 .takeIf { it.isNotBlank() }
-            ?: return
-
-        session.externalProgressEvents.add(title)
+                ?: event.progressEvent.descriptor.displayName
+                    .takeIf { it.isNotBlank() }
+                ?: return@withBuildLock
+            session.externalProgressEvents.add(title)
+        }
     }
 
-    fun onBuildProgressEvent(buildId: Any, event: BuildEvent) {
+    fun onBuildProgressEvent(projectBasePath: String?, buildId: Any, event: BuildEvent) {
         val buildIdStr = buildId.toString()
+        val pathHint = projectBasePath?.takeIf { it.isNotBlank() }.orEmpty()
 
-        // IMPRTANT: If we launch a build through "Run" (play button)
-        // onStart may not work, so we catch a start right from the UI build view.
-        if (event is StartBuildEvent) {
-            val title = event.buildDescriptor.title.takeIf { it.isNotBlank() } ?: "Android Build"
-            getOrCreateSession(buildIdStr, title, event.eventTime)
-        }
+        withBuildLock(buildIdStr) {
+            evictIfStaleUnderLock(buildIdStr)
 
-        val session = sessionsByBuildId[buildIdStr] ?: return
-
-        event.toIssueOrNull()?.let(session.issues::add)
-
-        when (event) {
-            is FinishBuildEvent -> session.treeResult = event.result.toBuildStatus()
-            is FinishEvent -> {
-                if (event.parentId == null) {
-                    session.treeResult = event.result.toBuildStatus()
+            if (event is StartBuildEvent) {
+                val title = event.buildDescriptor.title.takeIf { it.isNotBlank() } ?: "Android Build"
+                val existing = sessionsByBuildId[buildIdStr]
+                if (existing == null) {
+                    val newSession = BuildSession(
+                        buildId = buildIdStr,
+                        projectName = title,
+                        projectPath = pathHint,
+                        startedAt = event.eventTime,
+                    )
+                    sessionsByBuildId[buildIdStr] = newSession
+                    publisher().publishStarted(
+                        projectName = newSession.projectName,
+                        buildId = newSession.buildId,
+                    )
+                    ensureCleanupRunning()
+                } else if (existing.projectPath.isBlank() && pathHint.isNotBlank()) {
+                    existing.projectPath = pathHint
                 }
             }
-        }
 
-        logBuildEvent(event)
-        BuildGraphEventMapper.map(buildIdStr, event)
-            ?.let(publisher()::publishGraphEvent)
+            val session = sessionsByBuildId[buildIdStr] ?: return@withBuildLock
 
-        // Автоматически завершаем сессию, если пришло финальное событие всего дерева сборки
-        // Automatically finish session, if the finish event comes
-        if (event is FinishBuildEvent || (event is FinishEvent && event.parentId == null)) {
-            finalizeSession(buildIdStr)
+            event.toIssueOrNull()?.let(session.issues::add)
+
+            when (event) {
+                is FinishBuildEvent -> session.treeResult = event.result.toBuildStatus()
+                is FinishEvent -> {
+                    if (event.parentId == null) {
+                        session.treeResult = event.result.toBuildStatus()
+                    }
+                }
+            }
+
+            logBuildEvent(event)
+            BuildGraphEventMapper.map(buildIdStr, event)
+                ?.let(publisher()::publishGraphEvent)
+
+            if (event is FinishBuildEvent || (event is FinishEvent && event.parentId == null)) {
+                finalizeSessionLocked(buildIdStr)
+            }
         }
     }
 
     private fun logBuildEvent(event: BuildEvent) {
+        if (!logger.isDebugEnabled) return
         when (event) {
             is FinishEvent -> {
                 val result = event.result
-                logger.warn(
+                logger.debug(
                     """
-                FINISH:
-                class=${event.javaClass.name}
-                message=${event.message}
-                hint=${event.hint}
-                description=${event.description}
-                resultClass=${result?.javaClass?.name}
-                failures=${(result as? FailureResult)?.failures?.size ?: 0}
-                """.trimIndent()
+                    FINISH:
+                    class=${event.javaClass.name}
+                    message=${event.message}
+                    hint=${event.hint}
+                    description=${event.description}
+                    resultClass=${result?.javaClass?.name}
+                    failures=${(result as? FailureResult)?.failures?.size ?: 0}
+                    """.trimIndent(),
                 )
 
                 if (result is FailureResult) {
@@ -125,65 +224,80 @@ class BuildMonitorService {
             }
 
             else -> {
-                logger.warn(
+                logger.debug(
                     """
-                EVENT:
-                class=${event.javaClass.name}
-                message=${event.message}
-                hint=${event.hint}
-                description=${event.description}
-                """.trimIndent()
+                    EVENT:
+                    class=${event.javaClass.name}
+                    message=${event.message}
+                    hint=${event.hint}
+                    description=${event.description}
+                    """.trimIndent(),
                 )
             }
         }
     }
 
     private fun logFailure(failure: Failure, depth: Int) {
+        if (!logger.isDebugEnabled) return
         val indent = "  ".repeat(depth)
-        logger.warn(
+        logger.debug(
             """
-        ${indent}FAILURE:
-        ${indent}class=${failure.javaClass.name}
-        ${indent}message=${failure.message}
-        ${indent}description=${failure.description}
-        ${indent}causes=${failure.causes.size}
-        """.trimIndent()
+            ${indent}FAILURE:
+            ${indent}class=${failure.javaClass.name}
+            ${indent}message=${failure.message}
+            ${indent}description=${failure.description}
+            ${indent}causes=${failure.causes.size}
+            """.trimIndent(),
         )
-
         failure.causes.forEach { cause ->
             logFailure(cause, depth + 1)
         }
     }
 
     fun onSuccess(taskId: ExternalSystemTaskId) {
-        sessionsByBuildId[taskId.toString()]?.reportedStatus = BuildStatus.SUCCESS
+        val id = taskId.toString()
+        withBuildLock(id) {
+            evictIfStaleUnderLock(id)
+            sessionsByBuildId[id]?.reportedStatus = BuildStatus.SUCCESS
+        }
     }
 
     fun onFailure(taskId: ExternalSystemTaskId, exception: Exception) {
-        val session = sessionsByBuildId[taskId.toString()] ?: return
-        session.reportedStatus = BuildStatus.FAILED
-
-        session.issues.add(
-            BuildIssue(
-                message = exception.message ?: exception.toString(),
-                severity = BuildIssue.Severity.ERROR
+        val id = taskId.toString()
+        withBuildLock(id) {
+            evictIfStaleUnderLock(id)
+            val session = sessionsByBuildId[id] ?: return@withBuildLock
+            session.reportedStatus = BuildStatus.FAILED
+            session.issues.add(
+                BuildIssue(
+                    message = exception.message ?: exception.toString(),
+                    severity = BuildIssue.Severity.ERROR,
+                ),
             )
-        )
+        }
         logger.warn("Gradle task failed: ${taskId.type} ${taskId.id}", exception)
     }
 
     fun onCancel(taskId: ExternalSystemTaskId) {
-        sessionsByBuildId[taskId.toString()]?.reportedStatus = BuildStatus.CANCELLED
+        val id = taskId.toString()
+        withBuildLock(id) {
+            evictIfStaleUnderLock(id)
+            sessionsByBuildId[id]?.reportedStatus = BuildStatus.CANCELLED
+        }
     }
 
     fun onEnd(taskId: ExternalSystemTaskId) {
-        // Вызов на случай, если сборка завершилась, но FinishBuildEvent почему-то не пришел
         finalizeSession(taskId.toString())
     }
 
-    @Synchronized
     private fun finalizeSession(buildId: String) {
-        // Удаляем сессию. Если её уже нет (закрыли по FinishBuildEvent), просто выходим
+        withBuildLock(buildId) {
+            finalizeSessionLocked(buildId)
+        }
+    }
+
+    /** Caller must hold the per-[buildId] lock. */
+    private fun finalizeSessionLocked(buildId: String) {
         val session = sessionsByBuildId.remove(buildId) ?: return
 
         val settings = service<PluginSettingsState>().snapshot()
@@ -333,9 +447,14 @@ class BuildMonitorService {
             else -> BuildStatus.FAILED
         }
 
-    private data class BuildSession(
+    override fun dispose() {
+        cleanupScope.cancel()
+    }
+
+    private class BuildSession(
         val buildId: String,
         val projectName: String,
+        var projectPath: String,
         val startedAt: Long,
         val issues: ConcurrentLinkedQueue<BuildIssue> = ConcurrentLinkedQueue(),
         val rawOutput: ConcurrentLinkedQueue<String> = ConcurrentLinkedQueue(),
