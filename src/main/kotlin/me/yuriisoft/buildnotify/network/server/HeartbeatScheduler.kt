@@ -2,8 +2,9 @@ package me.yuriisoft.buildnotify.network.server
 
 import com.intellij.openapi.diagnostic.thisLogger
 import kotlinx.coroutines.*
+import me.yuriisoft.buildnotify.serialization.HeartbeatPayload
 import me.yuriisoft.buildnotify.serialization.MessageSerializer
-import me.yuriisoft.buildnotify.serialization.WsMessage
+import me.yuriisoft.buildnotify.serialization.WsEnvelope
 import me.yuriisoft.buildnotify.settings.PluginSettingsState
 
 /**
@@ -63,7 +64,7 @@ class HeartbeatScheduler(
         if (registry.hasNoOpenClients()) return
 
         runCatching {
-            val message = MessageSerializer.encode(WsMessage.Heartbeat())
+            val message = MessageSerializer.encode(WsEnvelope(payload = HeartbeatPayload()))
             registry.broadcast(message)
         }.onFailure { throwable ->
             logger.warn("Failed to send heartbeat", throwable)

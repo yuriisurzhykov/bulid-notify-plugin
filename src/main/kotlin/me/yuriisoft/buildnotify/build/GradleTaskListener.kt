@@ -2,24 +2,23 @@ package me.yuriisoft.buildnotify.build
 
 import com.intellij.openapi.components.service
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskId
-import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationEvent
 import com.intellij.openapi.externalSystem.model.task.ExternalSystemTaskNotificationListener
-import com.intellij.openapi.externalSystem.model.task.event.ExternalSystemTaskExecutionEvent
 
+/**
+ * Extension-point listener that bridges Gradle task lifecycle callbacks
+ * to [BuildMonitorService].
+ *
+ * Registered in `plugin.xml` as an `externalSystemTaskNotificationListener`.
+ * The IDE instantiates this class automatically for every Gradle invocation.
+ *
+ * Each override delegates to a single [BuildMonitorService] method — no logic
+ * lives here. The listener deliberately omits `onStatusChange` and
+ * `onTaskOutput` as those signals are redundant with the build event tree.
+ */
 class GradleTaskListener : ExternalSystemTaskNotificationListener {
 
     override fun onStart(id: ExternalSystemTaskId, workingDir: String) {
         service<BuildMonitorService>().onStart(workingDir, id)
-    }
-
-    override fun onStatusChange(event: ExternalSystemTaskNotificationEvent) {
-        if (event is ExternalSystemTaskExecutionEvent) {
-            service<BuildMonitorService>().onTaskExecutionProgress(event)
-        }
-    }
-
-    override fun onTaskOutput(id: ExternalSystemTaskId, text: String, stdOut: Boolean) {
-        service<BuildMonitorService>().onTaskOutput(id, text)
     }
 
     override fun onSuccess(id: ExternalSystemTaskId) {
