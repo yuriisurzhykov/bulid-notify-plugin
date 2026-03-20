@@ -1,1 +1,1 @@
-rootProject.name = "bulid-notify-plugin"
+rootProject.name = "build-notify-plugin"
