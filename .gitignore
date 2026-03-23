@@ -1,0 +1,39 @@
+# ── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.DS_Store
+
+# ── Build outputs (any sub-project) ──────────────────────────────────────────
+**/build/
+**/out/
+**/dist/
+**/.gradle/
+**/.kotlin/
+
+# ── Android / KMP ─────────────────────────────────────────────────────────────
+**/local.properties
+**/.cxx/
+**/captures/
+**/*.apk
+**/*.aab
+**/*.keystore
+**/*.jks
+
+# ── Xcode / iOS ───────────────────────────────────────────────────────────────
+**/xcuserdata/
+**/*.xcworkspace/xcshareddata/
+**/DerivedData/
+**/Pods/
+**/.swiftpm/
+
+# ── Secrets / certs ───────────────────────────────────────────────────────────
+**/*.p12
+**/*.pem
+**/*.env
+.env
+
+# ── git-cliff generated (committed selectively) ───────────────────────────────
+# Each sub-project tracks its own CHANGELOG.md — not excluded globally.
