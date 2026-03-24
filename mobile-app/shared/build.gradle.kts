@@ -3,23 +3,13 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.android.library)
+    id("apple-ios-targets")
 }
 
 kotlin {
     androidTarget {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-        }
-    }
-
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64(),
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
-            baseName = "shared"
-            isStatic = true
         }
     }
 
@@ -37,7 +27,9 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
         }
 
-        iosMain.dependencies {
+        // iosMain is created only on macOS by the apple-ios-targets convention plugin.
+        // findByName returns null on Windows/Linux → the block is simply not called.
+        findByName("iosMain")?.dependencies {
             implementation(libs.ktor.client.darwin)
         }
     }
@@ -57,11 +49,7 @@ android {
     }
 }
 
-// KSP targets for kotlin-inject annotation processor
 dependencies {
     add("kspCommonMainMetadata", libs.kotlin.inject.compiler)
     add("kspAndroid", libs.kotlin.inject.compiler)
-    add("kspIosX64", libs.kotlin.inject.compiler)
-    add("kspIosArm64", libs.kotlin.inject.compiler)
-    add("kspIosSimulatorArm64", libs.kotlin.inject.compiler)
 }

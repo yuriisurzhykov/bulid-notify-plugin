@@ -1,39 +1,54 @@
 [versions]
-kotlin                = "2.1.20"
-ksp                   = "2.1.20-1.0.32"
-compose-multiplatform = "1.8.0"
-ktor                  = "3.1.1"
-kotlinx-coroutines    = "1.10.2"
-kotlinx-serialization = "1.8.0"
-kotlinx-datetime      = "0.6.1"
-kotlin-inject         = "0.7.2"
-lifecycle-viewmodel   = "2.9.0"
-navigation-compose    = "2.9.0"
-android-compileSdk    = "35"
-android-minSdk        = "26"
+agp = "8.9.1"
+kotlin = "2.3.20"
+ksp = "2.3.6"
+compose-multiplatform = "1.10.3"
+ktor = "3.4.1"
+kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.10.0"
+kotlinx-datetime = "0.7.1"
+kotlin-inject = "0.9.0"
+lifecycle-viewmodel = "2.10.0"
+activity-compose = "1.13.0"
+navigation = "2.9.2"
+android-compileSdk = "36"
+android-minSdk = "26"
 
 [libraries]
-ktor-client-core         = { group = "io.ktor", name = "ktor-client-core",                    version.ref = "ktor" }
-ktor-client-okhttp       = { group = "io.ktor", name = "ktor-client-okhttp",                  version.ref = "ktor" }
-ktor-client-darwin       = { group = "io.ktor", name = "ktor-client-darwin",                  version.ref = "ktor" }
-ktor-client-websockets   = { group = "io.ktor", name = "ktor-client-websockets",              version.ref = "ktor" }
-ktor-serialization-json  = { group = "io.ktor", name = "ktor-serialization-kotlinx-json",     version.ref = "ktor" }
+ktor-client-core = { group = "io.ktor", name = "ktor-client-core", version.ref = "ktor" }
+ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
+ktor-client-darwin = { group = "io.ktor", name = "ktor-client-darwin", version.ref = "ktor" }
+ktor-client-websockets = { group = "io.ktor", name = "ktor-client-websockets", version.ref = "ktor" }
+ktor-serialization-json = { group = "io.ktor", name = "ktor-serialization-kotlinx-json", version.ref = "ktor" }
 
-kotlinx-coroutines-core  = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core",  version.ref = "kotlinx-coroutines" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
-kotlinx-datetime         = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime",         version.ref = "kotlinx-datetime" }
+kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinx-datetime" }
 
-kotlin-inject-runtime    = { group = "me.tatarka.inject", name = "kotlin-inject-runtime",         version.ref = "kotlin-inject" }
-kotlin-inject-compiler   = { group = "me.tatarka.inject", name = "kotlin-inject-compiler-ksp",    version.ref = "kotlin-inject" }
+kotlin-inject-runtime = { group = "me.tatarka.inject", name = "kotlin-inject-runtime", version.ref = "kotlin-inject" }
+kotlin-inject-compiler = { group = "me.tatarka.inject", name = "kotlin-inject-compiler-ksp", version.ref = "kotlin-inject" }
 
-lifecycle-viewmodel      = { group = "androidx.lifecycle", name = "lifecycle-viewmodel",           version.ref = "lifecycle-viewmodel" }
-navigation-compose       = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version.ref = "navigation-compose" }
+jetbrains-compose-runtime = { group = "org.jetbrains.compose.runtime", name = "runtime", version.ref = "compose-multiplatform" }
+jetbrains-compose-ui = { group = "org.jetbrains.compose.ui", name = "ui", version.ref = "compose-multiplatform" }
+jetbrains-compose-navigation = { group = "org.jetbrains.androidx.navigation", name = "navigation-compose", version.ref = "navigation" }
+jetbrains-compose-foundation = { group = "org.jetbrains.compose.foundation", name = "foundation", version.ref = "compose-multiplatform" }
+jetbrains-compose-material = { group = "org.jetbrains.compose.material", name = "material", version.ref = "compose-multiplatform" }
+jetbrains-compose-resources = { group = "org.jetbrains.compose.components", name = "components-resources", version.ref = "compose-multiplatform" }
+
+
+lifecycle-viewmodel = { group = "androidx.lifecycle", name = "lifecycle-viewmodel", version.ref = "lifecycle-viewmodel" }
+activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activity-compose" }
+
+# Gradle plugin artifacts — used as compileOnly deps in build-logic
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "symbol-processing-gradle-plugin", version.ref = "ksp" }
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
 
 [plugins]
-kotlin-multiplatform   = { id = "org.jetbrains.kotlin.multiplatform",        version.ref = "kotlin" }
-kotlin-serialization   = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
-compose-multiplatform  = { id = "org.jetbrains.compose",                     version.ref = "compose-multiplatform" }
-compose-compiler       = { id = "org.jetbrains.kotlin.plugin.compose",       version.ref = "kotlin" }
-ksp                    = { id = "com.google.devtools.ksp",                    version.ref = "ksp" }
-android-application    = { id = "com.android.application",                   version = "8.9.0" }
-android-library        = { id = "com.android.library",                       version = "8.9.0" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose-multiplatform" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
