@@ -10,10 +10,11 @@ import me.yuriisoft.buildnotify.mobile.ui.theme.brush.BrushScheme
 import me.yuriisoft.buildnotify.mobile.ui.theme.brush.DarkBrushScheme
 import me.yuriisoft.buildnotify.mobile.ui.theme.brush.LightBrushScheme
 import me.yuriisoft.buildnotify.mobile.ui.theme.shapes.BuildNotifyShapes
+import me.yuriisoft.buildnotify.mobile.ui.theme.shapes.DefaultShapes
 import me.yuriisoft.buildnotify.mobile.ui.theme.typography.BuildNotifyTypography
 
 val LocalBuildNotifyColors = staticCompositionLocalOf { LightColorScheme }
-val LocalBuildNotifyShapes = staticCompositionLocalOf { BuildNotifyShapes() }
+val LocalBuildNotifyShapes = staticCompositionLocalOf { DefaultShapes }
 val LocalBuildNotifyTypography = staticCompositionLocalOf { BuildNotifyTypography() }
 val LocalBuildNotifyBrushes = staticCompositionLocalOf { LightBrushScheme }
 
@@ -27,7 +28,7 @@ fun BuildNotifyTheme(
 
     CompositionLocalProvider(
         LocalBuildNotifyColors provides scheme,
-        LocalBuildNotifyShapes provides BuildNotifyShapes(),
+        LocalBuildNotifyShapes provides DefaultShapes,
         LocalBuildNotifyTypography provides BuildNotifyTypography(),
         LocalBuildNotifyBrushes provides brushes,
     ) {

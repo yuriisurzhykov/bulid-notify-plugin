@@ -7,11 +7,15 @@ import androidx.compose.ui.unit.dp
 
 @Immutable
 data class BuildNotifyShapes(
-    val card: Shape = RoundedCornerShape(16.dp),
-    val statsCard: Shape = RoundedCornerShape(12.dp),
-    val buttonFilled: Shape = RoundedCornerShape(12.dp),
-    val buttonOutline: Shape = RoundedCornerShape(8.dp),
-    val codeBlock: Shape = RoundedCornerShape(8.dp),
-    val progressBar: Shape = RoundedCornerShape(percent = 50),
-    val badge: Shape = RoundedCornerShape(percent = 50),
+    val small: Shape,
+    val medium: Shape,
+    val large: Shape,
+    val full: Shape,
+)
+
+val DefaultShapes = BuildNotifyShapes(
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp),
+    full = RoundedCornerShape(percent = 50),
 )

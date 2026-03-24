@@ -41,7 +41,7 @@ fun DiscoveryScreen(
                 .height(65.dp)
                 .background(
                     brush = BuildNotifyTheme.brushes.actionGradient.toBrush(),
-                    shape = BuildNotifyTheme.shapes.buttonFilled,
+                    shape = BuildNotifyTheme.shapes.medium,
                 )
         )
     }
