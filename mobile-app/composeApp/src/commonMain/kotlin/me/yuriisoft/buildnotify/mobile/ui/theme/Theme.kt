@@ -13,7 +13,8 @@ import me.yuriisoft.buildnotify.mobile.ui.theme.color.toMaterialColors
 import me.yuriisoft.buildnotify.mobile.ui.theme.dimens.BuildNotifyDimensions
 import me.yuriisoft.buildnotify.mobile.ui.theme.dimens.CompactDimensions
 import me.yuriisoft.buildnotify.mobile.ui.theme.shapes.DefaultShapes
-import me.yuriisoft.buildnotify.mobile.ui.theme.typography.BuildNotifyTypography
+import me.yuriisoft.buildnotify.mobile.ui.theme.typography.buildTypography
+import me.yuriisoft.buildnotify.mobile.ui.theme.typography.rememberBuildNotifyTypography
 
 @Composable
 fun BuildNotifyTheme(
@@ -23,11 +24,12 @@ fun BuildNotifyTheme(
 ) {
     val scheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val brushes = if (darkTheme) DarkBrushScheme else LightBrushScheme
+    val typography = rememberBuildNotifyTypography()
 
     CompositionLocalProvider(
         LocalBuildNotifyColors provides scheme,
         LocalBuildNotifyShapes provides DefaultShapes,
-        LocalBuildNotifyTypography provides BuildNotifyTypography(),
+        LocalBuildNotifyTypography provides typography,
         LocalBuildNotifyBrushes provides brushes,
         LocalBuildNotifyDimensions provides dimensions,
     ) {
@@ -40,6 +42,6 @@ fun BuildNotifyTheme(
 
 val LocalBuildNotifyColors = staticCompositionLocalOf { LightColorScheme }
 val LocalBuildNotifyShapes = staticCompositionLocalOf { DefaultShapes }
-val LocalBuildNotifyTypography = staticCompositionLocalOf { BuildNotifyTypography() }
+val LocalBuildNotifyTypography = staticCompositionLocalOf { buildTypography() }
 val LocalBuildNotifyBrushes = staticCompositionLocalOf { LightBrushScheme }
 val LocalBuildNotifyDimensions = staticCompositionLocalOf { CompactDimensions }
