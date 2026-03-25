@@ -1,4 +1,4 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.foundation
+package me.yuriisoft.buildnotify.mobile.ui.components.progress
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -10,7 +10,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -34,14 +33,14 @@ fun IndeterminateCircularProgress(
     size: Dp = BuildNotifyTheme.dimensions.icon.large,
 ) {
     val infiniteTransition = rememberInfiniteTransition()
-    val rotation by infiniteTransition.animateFloat(
+    val rotation = infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
         animationSpec = infiniteRepeatable(
             animation = tween(durationMillis = 1100, easing = LinearEasing),
         ),
     )
-    val sweepAngle by infiniteTransition.animateFloat(
+    val sweepAngle = infiniteTransition.animateFloat(
         initialValue = 30f,
         targetValue = 270f,
         animationSpec = infiniteRepeatable(
@@ -56,7 +55,7 @@ fun IndeterminateCircularProgress(
     Canvas(
         modifier = modifier
             .size(size)
-            .graphicsLayer { rotationZ = rotation }
+            .graphicsLayer { rotationZ = rotation.value }
             .semantics { progressBarRangeInfo = ProgressBarRangeInfo.Indeterminate },
     ) {
         val padding = stroke.width / 2f
@@ -68,7 +67,7 @@ fun IndeterminateCircularProgress(
         drawArc(
             brush = gradient.toBrush(this.size),
             startAngle = -90f,
-            sweepAngle = sweepAngle,
+            sweepAngle = sweepAngle.value,
             useCenter = false,
             topLeft = Offset(padding, padding),
             size = arcSize,

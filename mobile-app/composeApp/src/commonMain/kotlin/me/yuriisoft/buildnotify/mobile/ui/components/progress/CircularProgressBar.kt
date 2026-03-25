@@ -1,4 +1,4 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.foundation
+package me.yuriisoft.buildnotify.mobile.ui.components.progress
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -6,7 +6,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -34,11 +35,13 @@ fun CircularProgressBar(
     size: Dp = BuildNotifyTheme.dimensions.icon.large,
 ) {
     val coercedProgress = progress.coerceIn(0f, 1f)
-    val animatedProgress by animateFloatAsState(
+    val animatedProgress = animateFloatAsState(
         targetValue = coercedProgress,
         animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
     )
-    val sweepAngle = animatedProgress * 360f
+    val sweepAngle = remember(animatedProgress) {
+        derivedStateOf { animatedProgress.value * 360f }
+    }
     val stroke = with(LocalDensity.current) {
         Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
     }
@@ -70,11 +73,11 @@ fun CircularProgressBar(
             style = stroke,
         )
 
-        if (sweepAngle > 0f) {
+        if (sweepAngle.value > 0f) {
             drawArc(
                 brush = gradient.toBrush(this.size),
                 startAngle = StartAngle,
-                sweepAngle = sweepAngle,
+                sweepAngle = sweepAngle.value,
                 useCenter = false,
                 topLeft = topLeft,
                 size = arcSize,

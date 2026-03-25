@@ -1,4 +1,4 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.foundation
+package me.yuriisoft.buildnotify.mobile.ui.components.progress
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
@@ -10,7 +10,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -30,7 +29,7 @@ fun IndeterminateLinearProgress(
     shape: Shape = BuildNotifyTheme.shapes.full,
 ) {
     val infiniteTransition = rememberInfiniteTransition()
-    val offset by infiniteTransition.animateFloat(
+    val offset = infiniteTransition.animateFloat(
         initialValue = -0.3f,
         targetValue = 1.3f,
         animationSpec = infiniteRepeatable(
@@ -49,7 +48,7 @@ fun IndeterminateLinearProgress(
     ) {
         drawRect(color = trackColor)
         val barWidth = size.width * 0.3f
-        val startX = size.width * offset
+        val startX = size.width * offset.value
         clipRect(
             left = startX.coerceAtLeast(0f),
             right = (startX + barWidth).coerceAtMost(size.width),

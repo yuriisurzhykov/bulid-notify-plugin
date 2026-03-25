@@ -1,4 +1,4 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.model
+package me.yuriisoft.buildnotify.mobile.ui.components.model
 
 import androidx.compose.runtime.Immutable
 

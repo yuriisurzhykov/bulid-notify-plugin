@@ -7,11 +7,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
+import me.yuriisoft.buildnotify.mobile.ui.resource.RawText
 import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
 
 /**
@@ -34,7 +35,10 @@ fun DiscoveryScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("Discovery — Phase 4", color = BuildNotifyTheme.colors.content.primary)
+        Text(
+            text = RawText("Discovery — Phase 4"),
+            color = BuildNotifyTheme.colors.content.primary,
+        )
         Box(
             modifier = Modifier
                 .fillMaxWidth(0.6f)

@@ -1,4 +1,4 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.foundation
+package me.yuriisoft.buildnotify.mobile.ui.components.layout
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

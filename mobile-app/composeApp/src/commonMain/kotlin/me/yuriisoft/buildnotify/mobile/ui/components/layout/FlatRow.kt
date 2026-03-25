@@ -1,4 +1,4 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.foundation
+package me.yuriisoft.buildnotify.mobile.ui.components.layout
 
 import androidx.compose.foundation.layout.LayoutScopeMarker
 import androidx.compose.runtime.Composable

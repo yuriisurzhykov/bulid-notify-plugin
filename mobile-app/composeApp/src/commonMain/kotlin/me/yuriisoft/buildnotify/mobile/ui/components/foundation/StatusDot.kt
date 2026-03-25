@@ -1,4 +1,4 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.foundation
+package me.yuriisoft.buildnotify.mobile.ui.components.foundation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

@@ -2,10 +2,11 @@ package me.yuriisoft.buildnotify.mobile.ui.screen
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
+import me.yuriisoft.buildnotify.mobile.ui.resource.RawText
 
 /**
  * Shows live build status streamed from the plugin over WebSocket.
@@ -27,6 +28,6 @@ fun BuildStatusScreen(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center,
     ) {
-        Text("Build Status [$host:$port] — Phase 4")
+        Text(text = RawText("Build Status [$host:$port] — Phase 4"))
     }
 }

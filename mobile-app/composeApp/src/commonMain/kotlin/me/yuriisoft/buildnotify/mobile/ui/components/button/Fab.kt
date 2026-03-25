@@ -1,10 +1,9 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.button
+package me.yuriisoft.buildnotify.mobile.ui.components.button
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.ripple
@@ -19,18 +18,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
+import me.yuriisoft.buildnotify.mobile.ui.components.icon.Icon
+import me.yuriisoft.buildnotify.mobile.ui.resource.ImageResource
+import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
 
 @Composable
 fun Fab(
+    image: ImageResource,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    contentDescription: TextResource? = null,
     containerColor: Color = BuildNotifyTheme.colors.primary.main,
     contentColor: Color = BuildNotifyTheme.colors.primary.onMain,
     size: Dp = BuildNotifyTheme.dimensions.component.fabSize,
+    iconSize: Dp = BuildNotifyTheme.dimensions.icon.regular,
     shape: Shape = BuildNotifyTheme.shapes.large,
     elevation: Dp = BuildNotifyTheme.dimensions.elevation.medium,
-    content: @Composable BoxScope.() -> Unit,
 ) {
     CompositionLocalProvider(LocalContentColor provides contentColor) {
         Box(
@@ -46,7 +50,12 @@ fun Fab(
                     onClick = onClick,
                 ),
             contentAlignment = Alignment.Center,
-            content = content,
-        )
+        ) {
+            Icon(
+                image = image,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(iconSize),
+            )
+        }
     }
 }

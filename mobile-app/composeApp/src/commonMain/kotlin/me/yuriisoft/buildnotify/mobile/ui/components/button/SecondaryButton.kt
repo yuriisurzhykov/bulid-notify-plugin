@@ -1,5 +1,6 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.button
+package me.yuriisoft.buildnotify.mobile.ui.components.button
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -15,24 +16,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
-import me.yuriisoft.buildnotify.mobile.ui.theme.brush.semantic.GradientSpec
 
 private const val DisabledAlpha = 0.38f
 
 @Composable
-fun PrimaryButton(
+fun SecondaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    gradient: GradientSpec = BuildNotifyTheme.brushes.actionGradient,
-    contentColor: Color = BuildNotifyTheme.colors.content.onElevated,
+    borderColor: Color = BuildNotifyTheme.colors.outline,
+    contentColor: Color = BuildNotifyTheme.colors.content.primary,
     shape: Shape = BuildNotifyTheme.shapes.medium,
     contentPadding: PaddingValues = PaddingValues(
         horizontal = BuildNotifyTheme.dimensions.spacing.xLarge,
@@ -40,6 +38,7 @@ fun PrimaryButton(
     ),
     content: @Composable RowScope.() -> Unit,
 ) {
+    val strokeWidth = BuildNotifyTheme.dimensions.stroke.regular
     val clickableModifier = if (enabled) {
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
@@ -55,10 +54,7 @@ fun PrimaryButton(
         Row(
             modifier = modifier
                 .graphicsLayer { alpha = if (enabled) 1f else DisabledAlpha }
-                .drawBehind {
-                    val outline = shape.createOutline(size, layoutDirection, this)
-                    drawOutline(outline = outline, brush = gradient.toBrush(size))
-                }
+                .border(width = strokeWidth, color = borderColor, shape = shape)
                 .clip(shape)
                 .then(clickableModifier)
                 .padding(contentPadding),

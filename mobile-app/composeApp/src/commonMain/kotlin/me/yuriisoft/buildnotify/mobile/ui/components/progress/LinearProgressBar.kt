@@ -1,4 +1,4 @@
-package me.yuriisoft.buildnotify.mobile.ui.component.foundation
+package me.yuriisoft.buildnotify.mobile.ui.components.progress
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -7,7 +7,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -28,7 +27,7 @@ fun LinearProgressBar(
     shape: Shape = BuildNotifyTheme.shapes.full,
 ) {
     val coercedProgress = progress.coerceIn(0f, 1f)
-    val animatedProgress by animateFloatAsState(
+    val animatedProgress = animateFloatAsState(
         targetValue = coercedProgress,
         animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
     )
@@ -47,7 +46,7 @@ fun LinearProgressBar(
             },
     ) {
         drawRect(color = trackColor)
-        val fillWidth = size.width * animatedProgress
+        val fillWidth = size.width * animatedProgress.value
         if (fillWidth > 0f) {
             clipRect(right = fillWidth) {
                 drawRect(brush = gradient.toBrush(size))
