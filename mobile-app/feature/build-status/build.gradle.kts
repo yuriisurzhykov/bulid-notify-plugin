@@ -14,6 +14,7 @@ kotlin {
             implementation(project(":core:navigation"))
             implementation(project(":core:ui"))
             implementation(libs.lifecycle.viewmodel)
+            implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.kotlin.inject.runtime)
         }
 

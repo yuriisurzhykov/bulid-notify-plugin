@@ -9,7 +9,7 @@ android {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(libs.jetbrains.compose.navigation)
+            api(libs.jetbrains.compose.navigation)
         }
     }
 }
