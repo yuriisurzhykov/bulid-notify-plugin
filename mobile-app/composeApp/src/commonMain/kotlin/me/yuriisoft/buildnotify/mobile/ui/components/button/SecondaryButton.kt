@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.ripple
@@ -53,6 +54,7 @@ fun SecondaryButton(
     CompositionLocalProvider(LocalContentColor provides contentColor) {
         Row(
             modifier = modifier
+                .heightIn(BuildNotifyTheme.dimensions.component.buttonMinHeight)
                 .graphicsLayer { alpha = if (enabled) 1f else DisabledAlpha }
                 .border(width = strokeWidth, color = borderColor, shape = shape)
                 .clip(shape)

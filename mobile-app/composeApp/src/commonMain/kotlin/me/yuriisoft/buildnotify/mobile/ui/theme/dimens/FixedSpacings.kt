@@ -39,6 +39,10 @@ internal val FixedComponentDimensions = ComponentDimensions(
     avatarSize = 40.dp,
     statusDotSize = 8.dp,
     progressBarHeight = 6.dp,
+    progressCircularSize = 40.dp,
+    progressCircularStrokeWidth = 4.dp,
+    progressSegmentGap = 2.dp,
     badgeHeight = 24.dp,
     badgePaddingHorizontal = 8.dp,
+    buttonMinHeight = 48.dp,
 )

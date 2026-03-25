@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.LocalContentColor
 import androidx.compose.material.ripple
@@ -54,6 +55,7 @@ fun PrimaryButton(
     CompositionLocalProvider(LocalContentColor provides contentColor) {
         Row(
             modifier = modifier
+                .heightIn(BuildNotifyTheme.dimensions.component.buttonMinHeight)
                 .graphicsLayer { alpha = if (enabled) 1f else DisabledAlpha }
                 .drawBehind {
                     val outline = shape.createOutline(size, layoutDirection, this)

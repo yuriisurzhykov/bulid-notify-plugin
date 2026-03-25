@@ -10,6 +10,10 @@ data class ComponentDimensions(
     val avatarSize: Dp,
     val statusDotSize: Dp,
     val progressBarHeight: Dp,
+    val progressCircularSize: Dp,
+    val progressCircularStrokeWidth: Dp,
+    val progressSegmentGap: Dp,
     val badgeHeight: Dp,
     val badgePaddingHorizontal: Dp,
+    val buttonMinHeight: Dp,
 )

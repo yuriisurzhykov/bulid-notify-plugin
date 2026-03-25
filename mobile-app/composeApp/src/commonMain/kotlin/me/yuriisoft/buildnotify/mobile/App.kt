@@ -8,7 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import me.yuriisoft.buildnotify.mobile.ui.screen.AppScreen
 import me.yuriisoft.buildnotify.mobile.ui.screen.BuildStatusScreen
-import me.yuriisoft.buildnotify.mobile.ui.screen.DiscoveryScreen
+import me.yuriisoft.buildnotify.mobile.ui.screen.CatalogScreen
 import me.yuriisoft.buildnotify.mobile.ui.screen.HistoryScreen
 import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
 
@@ -28,11 +28,7 @@ fun App() {
             startDestination = AppScreen.Discovery.route,
         ) {
             composable(AppScreen.Discovery.route) {
-                DiscoveryScreen(
-                    onHostSelected = { host, port ->
-                        navController.navigate(AppScreen.BuildStatus.createRoute(host, port))
-                    },
-                )
+                CatalogScreen()
             }
 
             composable(

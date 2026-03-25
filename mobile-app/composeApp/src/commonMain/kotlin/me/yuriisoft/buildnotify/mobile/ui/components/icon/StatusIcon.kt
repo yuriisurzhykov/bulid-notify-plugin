@@ -11,7 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import me.yuriisoft.buildnotify.mobile.ui.components.progress.IndeterminateCircularProgress
+import me.yuriisoft.buildnotify.mobile.ui.components.progress.CircularProgress
+import me.yuriisoft.buildnotify.mobile.ui.components.progress.mode.circular.CircularProgressMode
 import me.yuriisoft.buildnotify.mobile.ui.resource.ImageResource
 import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
@@ -35,7 +36,8 @@ fun StatusIcon(
             contentAlignment = Alignment.Center,
         ) {
             if (loading) {
-                IndeterminateCircularProgress(
+                CircularProgress(
+                    mode = CircularProgressMode.Indeterminate(),
                     size = iconSize,
                     strokeWidth = BuildNotifyTheme.dimensions.stroke.regular,
                 )
