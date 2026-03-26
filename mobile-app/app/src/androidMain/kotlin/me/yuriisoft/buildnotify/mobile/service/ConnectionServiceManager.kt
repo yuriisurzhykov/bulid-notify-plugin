@@ -4,8 +4,8 @@ import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import me.yuriisoft.buildnotify.mobile.domain.model.ConnectionStatus
-import me.yuriisoft.buildnotify.mobile.domain.repository.IConnectionRepository
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionStatus
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.IConnectionRepository
 
 /**
  * Bridges the domain-layer [IConnectionRepository] with the Android

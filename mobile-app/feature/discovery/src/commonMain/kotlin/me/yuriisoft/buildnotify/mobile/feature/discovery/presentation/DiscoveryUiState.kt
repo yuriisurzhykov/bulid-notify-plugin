@@ -1,6 +1,6 @@
 package me.yuriisoft.buildnotify.mobile.feature.discovery.presentation
 
-import me.yuriisoft.buildnotify.mobile.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 
 sealed interface DiscoveryUiState {

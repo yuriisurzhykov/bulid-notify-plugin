@@ -9,15 +9,15 @@ import me.tatarka.inject.annotations.IntoSet
 import me.tatarka.inject.annotations.Provides
 import me.yuriisoft.buildnotify.mobile.core.dispatchers.AppDispatchers
 import me.yuriisoft.buildnotify.mobile.core.navigation.Screen
-import me.yuriisoft.buildnotify.mobile.data.connection.ConnectionManager
-import me.yuriisoft.buildnotify.mobile.data.connection.ReconnectionPolicy
-import me.yuriisoft.buildnotify.mobile.data.discovery.INsdDiscovery
-import me.yuriisoft.buildnotify.mobile.data.repository.NsdRepository
-import me.yuriisoft.buildnotify.mobile.domain.model.AppVersionProvider
-import me.yuriisoft.buildnotify.mobile.domain.model.INetworkMonitor
-import me.yuriisoft.buildnotify.mobile.domain.repository.IConnectionRepository
-import me.yuriisoft.buildnotify.mobile.domain.repository.INsdRepository
+import me.yuriisoft.buildnotify.mobile.core.platform.AppVersionProvider
+import me.yuriisoft.buildnotify.mobile.core.platform.INetworkMonitor
+import me.yuriisoft.buildnotify.mobile.feature.discovery.data.connection.ConnectionManager
+import me.yuriisoft.buildnotify.mobile.feature.discovery.data.connection.ReconnectionPolicy
+import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.INsdDiscovery
+import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.NsdRepository
 import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.ObserveHostsUseCase
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.IConnectionRepository
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.INsdRepository
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryScreen
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryViewModel
 

@@ -18,13 +18,13 @@ import kotlinx.coroutines.launch
 import me.yuriisoft.buildnotify.mobile.core.communication.EventCommunication
 import me.yuriisoft.buildnotify.mobile.core.communication.StateCommunication
 import me.yuriisoft.buildnotify.mobile.core.dispatchers.AppDispatchers
+import me.yuriisoft.buildnotify.mobile.core.platform.INetworkMonitor
 import me.yuriisoft.buildnotify.mobile.core.usecase.FlowUseCase
 import me.yuriisoft.buildnotify.mobile.core.usecase.NoParams
-import me.yuriisoft.buildnotify.mobile.domain.model.ConnectionErrorReason
-import me.yuriisoft.buildnotify.mobile.domain.model.ConnectionStatus
-import me.yuriisoft.buildnotify.mobile.domain.model.DiscoveredHost
-import me.yuriisoft.buildnotify.mobile.domain.model.INetworkMonitor
-import me.yuriisoft.buildnotify.mobile.domain.repository.IConnectionRepository
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionErrorReason
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionStatus
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.IConnectionRepository
 import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 
 /**

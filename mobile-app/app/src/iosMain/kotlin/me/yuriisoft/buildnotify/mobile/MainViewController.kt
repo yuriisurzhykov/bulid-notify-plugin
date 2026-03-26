@@ -1,8 +1,7 @@
 package me.yuriisoft.buildnotify.mobile
 
 import androidx.compose.ui.window.ComposeUIViewController
-import me.yuriisoft.buildnotify.mobile.data.discovery.IosNsdDiscovery
-import me.yuriisoft.buildnotify.mobile.data.platform.IosNetworkMonitor
+import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.IosNsdDiscovery
 import platform.UIKit.UIViewController
 
 fun MainViewController(): UIViewController {

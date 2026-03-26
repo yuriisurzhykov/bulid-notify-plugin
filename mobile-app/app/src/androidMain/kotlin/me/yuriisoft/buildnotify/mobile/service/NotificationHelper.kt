@@ -4,9 +4,8 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 import androidx.core.app.NotificationCompat
-import me.yuriisoft.buildnotify.mobile.domain.model.BuildResult
+import me.yuriisoft.buildnotify.mobile.data.protocol.BuildResult
 import me.yuriisoft.buildnotify.mobile.service.NotificationHelper.Companion.CHANNEL_BUILD_EVENTS
 import me.yuriisoft.buildnotify.mobile.service.NotificationHelper.Companion.CHANNEL_PERSISTENT
 
@@ -84,8 +83,6 @@ class NotificationHelper(private val context: Context) {
             .build()
 
     private fun createChannels() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-
         val persistent = NotificationChannel(
             CHANNEL_PERSISTENT,
             "Connection Status",

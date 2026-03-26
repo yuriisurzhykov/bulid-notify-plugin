@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import me.yuriisoft.buildnotify.mobile.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.StatusDot
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
 import me.yuriisoft.buildnotify.mobile.ui.components.layout.Surface

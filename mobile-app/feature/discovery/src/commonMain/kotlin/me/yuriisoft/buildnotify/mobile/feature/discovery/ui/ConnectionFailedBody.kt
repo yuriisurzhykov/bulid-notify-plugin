@@ -13,7 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import build_notify_mobile.feature.discovery.generated.resources.Res
 import build_notify_mobile.feature.discovery.generated.resources.action_try_again
 import build_notify_mobile.feature.discovery.generated.resources.connection_failed_title
-import me.yuriisoft.buildnotify.mobile.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.components.button.SecondaryButton
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Divider
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text

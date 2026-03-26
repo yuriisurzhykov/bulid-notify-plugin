@@ -1,8 +1,7 @@
 package me.yuriisoft.buildnotify.mobile
 
 import android.app.Application
-import me.yuriisoft.buildnotify.mobile.data.discovery.AndroidNsdDiscovery
-import me.yuriisoft.buildnotify.mobile.data.platform.AndroidNetworkMonitor
+import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.AndroidNsdDiscovery
 
 /**
  * Application-scoped entry point that hosts the DI [component].

@@ -34,7 +34,7 @@ dependencyResolutionManagement {
 
 rootProject.name = "build-notify-mobile"
 
-include(":core:domain")
+include(":core:common")
 include(":core:data")
 include(":core:navigation")
 include(":core:ui")

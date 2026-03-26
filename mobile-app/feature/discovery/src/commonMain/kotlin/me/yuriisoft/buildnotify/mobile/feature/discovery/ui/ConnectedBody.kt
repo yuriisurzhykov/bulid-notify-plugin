@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import build_notify_mobile.feature.discovery.generated.resources.Res
 import build_notify_mobile.feature.discovery.generated.resources.connected_title
-import me.yuriisoft.buildnotify.mobile.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
 import me.yuriisoft.buildnotify.mobile.ui.components.icon.StatusIcon
 import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource

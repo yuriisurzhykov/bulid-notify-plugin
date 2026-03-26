@@ -3,7 +3,7 @@ package me.yuriisoft.buildnotify.mobile.testing
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import me.yuriisoft.buildnotify.mobile.domain.model.INetworkMonitor
+import me.yuriisoft.buildnotify.mobile.core.platform.INetworkMonitor
 
 /**
  * In-memory fake of [INetworkMonitor] for unit tests.

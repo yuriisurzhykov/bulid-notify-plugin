@@ -14,8 +14,8 @@ import me.yuriisoft.buildnotify.mobile.core.navigation.BuildStatusDestination
 import me.yuriisoft.buildnotify.mobile.core.navigation.Navigator
 import me.yuriisoft.buildnotify.mobile.core.navigation.Screen
 import me.yuriisoft.buildnotify.mobile.core.navigation.ScreenTransitions
-import me.yuriisoft.buildnotify.mobile.domain.model.AppVersionProvider
-import me.yuriisoft.buildnotify.mobile.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.core.platform.AppVersionProvider
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.feature.discovery.ui.DiscoveryContent
 
 @Inject

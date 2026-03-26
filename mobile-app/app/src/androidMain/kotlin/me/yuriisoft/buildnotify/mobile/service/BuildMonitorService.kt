@@ -9,8 +9,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import me.yuriisoft.buildnotify.mobile.BuildNotifyApp
-import me.yuriisoft.buildnotify.mobile.domain.model.ConnectionStatus
-import me.yuriisoft.buildnotify.mobile.domain.repository.IConnectionRepository
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionStatus
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.IConnectionRepository
 
 /**
  * Foreground service that keeps the WebSocket connection alive and posts
@@ -42,7 +42,6 @@ class BuildMonitorService : Service() {
         )
 
         observeConnectionStatus()
-        observeBuildEvents()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -66,18 +65,6 @@ class BuildMonitorService : Service() {
                         notificationHelper.updatePersistent("Connection lost. Reconnecting…")
 
                     is ConnectionStatus.Disconnected -> stopSelf()
-                }
-            }
-        }
-    }
-
-    private fun observeBuildEvents() {
-        serviceScope.launch {
-            connectionRepo.buildEvents.collect { event ->
-                if (event.isSuccessful) {
-                    notificationHelper.showBuildSuccess(event)
-                } else {
-                    notificationHelper.showBuildFailure(event)
                 }
             }
         }

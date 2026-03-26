@@ -1,6 +1,6 @@
 package me.yuriisoft.buildnotify.mobile
 
-import me.yuriisoft.buildnotify.mobile.domain.model.AppVersionProvider
+import me.yuriisoft.buildnotify.mobile.core.platform.AppVersionProvider
 
 /**
  * Reads the version name from the generated [BuildConfig].
