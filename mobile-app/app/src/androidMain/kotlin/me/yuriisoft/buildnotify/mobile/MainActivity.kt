@@ -15,7 +15,7 @@ class MainActivity : ComponentActivity() {
 
         val component = (application as BuildNotifyApp).component
 
-        ConnectionServiceManager(this, component.connectionRepository)
+        ConnectionServiceManager(this, component.connectionManager)
             .bind(lifecycleScope)
 
         setContent {

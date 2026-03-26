@@ -46,4 +46,5 @@
     <string name="error_refused">Connection refused: %1$s</string>
     <string name="error_handshake">Handshake failed: %1$s</string>
     <string name="error_lost">Connection lost: %1$s</string>
+    <string name="error_unknown">Unknown error occurred</string>
 </resources>

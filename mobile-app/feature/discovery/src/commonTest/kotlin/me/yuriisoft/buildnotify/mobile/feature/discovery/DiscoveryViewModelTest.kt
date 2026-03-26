@@ -5,16 +5,18 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.ObserveHostsUseCase
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionErrorReason
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionStatus
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryEvent
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryUiState
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryViewModel
+import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionState
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.network.error.ConnectionErrorReason
+import me.yuriisoft.buildnotify.mobile.testing.FakeConnectionManager
 import me.yuriisoft.buildnotify.mobile.testing.FakeNetworkMonitor
 import me.yuriisoft.buildnotify.mobile.testing.RecordingEventCommunication
 import me.yuriisoft.buildnotify.mobile.testing.RecordingStateCommunication
 import me.yuriisoft.buildnotify.mobile.testing.TestAppDispatchers
+import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -25,7 +27,7 @@ import kotlin.test.assertIs
 class DiscoveryViewModelTest {
 
     private val nsdRepository = FakeNsdRepository()
-    private val connectionRepository = FakeConnectionRepository()
+    private val connectionManager = FakeConnectionManager()
     private val networkMonitor = FakeNetworkMonitor(initiallyAvailable = true)
     private val dispatchers = TestAppDispatchers()
     private val useCase = ObserveHostsUseCase(nsdRepository)
@@ -47,7 +49,7 @@ class DiscoveryViewModelTest {
         navigateDelayMs: Long = 0L,
     ) = DiscoveryViewModel(
         observeHosts = useCase,
-        connectionRepository = connectionRepository,
+        connectionManager = connectionManager,
         networkMonitor = networkMonitor,
         dispatchers = dispatchers,
         state = state,
@@ -108,8 +110,8 @@ class DiscoveryViewModelTest {
 
         createViewModel()
 
-        assertEquals(1, connectionRepository.connectCalls.size)
-        assertEquals(HOST_MACBOOK, connectionRepository.connectCalls.first())
+        assertEquals(1, connectionManager.connectCalls.size)
+        assertEquals(HOST_MACBOOK, connectionManager.connectCalls.first())
         assertIs<DiscoveryUiState.Connected>(state.observe.value)
     }
 
@@ -160,8 +162,8 @@ class DiscoveryViewModelTest {
 
         vm.selectHost(HOST_MACBOOK)
 
-        assertEquals(1, connectionRepository.connectCalls.size)
-        assertEquals(HOST_MACBOOK, connectionRepository.connectCalls.first())
+        assertEquals(1, connectionManager.connectCalls.size)
+        assertEquals(HOST_MACBOOK, connectionManager.connectCalls.first())
     }
 
     @Test
@@ -181,8 +183,8 @@ class DiscoveryViewModelTest {
 
         vm.selectHost(HOST_MACBOOK)
 
-        connectionRepository.emitStatus(
-            ConnectionStatus.Error(
+        connectionManager.emitState(
+            ConnectionState.Failed(
                 HOST_MACBOOK,
                 ConnectionErrorReason.Refused("port closed"),
             ),
@@ -190,7 +192,7 @@ class DiscoveryViewModelTest {
 
         val current = state.observe.value
         assertIs<DiscoveryUiState.ConnectionFailed>(current)
-        assertIs<ResText>(current.reason)
+        assertIs<TextResource.ResText>(current.reasonResource)
     }
 
     @Test
@@ -202,8 +204,6 @@ class DiscoveryViewModelTest {
         assertEquals(1, events.history.size)
         val event = events.history.first()
         assertIs<DiscoveryEvent.NavigateToBuild>(event)
-        assertEquals(HOST_MACBOOK.host, event.host)
-        assertEquals(HOST_MACBOOK.port, event.port)
     }
 
     // endregion

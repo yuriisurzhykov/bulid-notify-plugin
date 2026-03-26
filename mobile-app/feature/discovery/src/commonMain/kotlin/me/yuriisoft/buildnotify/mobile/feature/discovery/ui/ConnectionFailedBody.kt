@@ -13,7 +13,6 @@ import androidx.compose.ui.text.style.TextAlign
 import build_notify_mobile.feature.discovery.generated.resources.Res
 import build_notify_mobile.feature.discovery.generated.resources.action_try_again
 import build_notify_mobile.feature.discovery.generated.resources.connection_failed_title
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.components.button.SecondaryButton
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Divider
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
@@ -25,7 +24,7 @@ import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
 
 @Composable
 internal fun ConnectionFailedBody(
-    host: DiscoveredHost,
+    host: TextResource,
     reason: TextResource,
     onRetry: () -> Unit,
 ) {
@@ -56,7 +55,7 @@ internal fun ConnectionFailedBody(
             Spacer(Modifier.height(spacing.tiny))
 
             Text(
-                text = TextResource.RawText(host.name),
+                text = host,
                 style = BuildNotifyTheme.typography.bodyMedium,
                 color = BuildNotifyTheme.colors.content.primary,
                 textAlign = TextAlign.Center,

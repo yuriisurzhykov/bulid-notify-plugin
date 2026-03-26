@@ -19,7 +19,7 @@ class FakeBuildRepository : IBuildRepository {
     val cancelledBuilds: MutableList<String> = mutableListOf()
     val triggeredBuilds: MutableList<Pair<String, List<String>>> = mutableListOf()
 
-    override fun observeEvents(host: String, port: Int): Flow<BuildResult> =
+    override fun observeEvents(): Flow<BuildResult> =
         _events.asSharedFlow()
 
     override suspend fun cancelBuild(buildId: String) {

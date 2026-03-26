@@ -4,19 +4,19 @@ import kotlinx.coroutines.flow.Flow
 import me.yuriisoft.buildnotify.mobile.data.protocol.BuildResult
 
 /**
- * Manages the connection to a Build Notify plugin instance.
+ * Observes build events from the active WebSocket session.
  *
  * Follows DIP: the domain layer depends only on this abstraction;
- * the concrete implementation (Ktor WebSocket) lives in `:core:data`.
+ * the concrete implementation subscribes to [ActiveSession.incoming].
+ * Connection lifecycle is managed elsewhere ([ConnectionManager]).
  */
 interface IBuildRepository {
 
     /**
-     * Opens a persistent connection and emits every incoming [BuildResult].
-     * The Flow completes when the connection is closed.
-     * Cancelling the collector disconnects cleanly.
+     * Emits every incoming [BuildResult] from the shared session.
+     * The flow never completes on its own — cancel the collector to stop.
      */
-    fun observeEvents(host: String, port: Int): Flow<BuildResult>
+    fun observeEvents(): Flow<BuildResult>
 
     /**
      * Sends a command to cancel the build with [buildId].

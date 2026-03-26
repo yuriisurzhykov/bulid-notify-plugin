@@ -1,31 +1,26 @@
 package me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery
 
 import kotlinx.coroutines.flow.Flow
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 
 /**
- * Abstracts mDNS / NSD service discovery.
+ * Platform abstraction for mDNS/NSD network service discovery.
  *
- * Concrete platform implementations:
- *   Android — [AndroidNsdDiscovery] via NsdManager
- *   iOS     — [IosNsdDiscovery] via NSNetServiceBrowser (cinterop)
+ * Platform-specific implementations ([AndroidNsdDiscovery], [IosNsdDiscovery])
+ * are injected into [AppComponent] by the platform entry point. The discovery
+ * feature module depends only on this interface (DIP).
  *
- * The domain layer depends only on [INsdRepository][me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.INsdRepository];
- * this interface sits one level below, inside the data layer, as the platform boundary (DIP).
+ * The service type (`_buildnotify._tcp.`) is an implementation detail of each
+ * platform — callers never need to specify it.
  */
 interface INsdDiscovery {
 
     /**
-     * Starts discovery for [serviceType] and emits the updated list of live hosts
-     * every time a service is added, removed, or resolved.
+     * Starts mDNS discovery and emits the current live snapshot of
+     * [DiscoveredHost]s every time a service appears, resolves, or disappears.
      *
-     * Discovery stops automatically when the collector is cancelled.
+     * The Flow never completes on its own — cancelling the collector stops
+     * the underlying platform discovery session.
      */
-    fun discoverServices(serviceType: String): Flow<List<DiscoveredHost>>
-
-    /**
-     * Stops any in-progress discovery immediately.
-     * Safe to call even when discovery is not running.
-     */
-    fun stopDiscovery()
+    fun discoverHosts(): Flow<List<DiscoveredHost>>
 }

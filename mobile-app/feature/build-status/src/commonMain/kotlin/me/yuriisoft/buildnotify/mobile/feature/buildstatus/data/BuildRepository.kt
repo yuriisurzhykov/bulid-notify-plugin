@@ -1,31 +1,33 @@
 package me.yuriisoft.buildnotify.mobile.feature.buildstatus.data
 
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.map
 import me.tatarka.inject.annotations.Inject
 import me.yuriisoft.buildnotify.mobile.data.protocol.BuildResult
 import me.yuriisoft.buildnotify.mobile.data.protocol.BuildResultPayload
 import me.yuriisoft.buildnotify.mobile.data.protocol.CancelBuildCommand
 import me.yuriisoft.buildnotify.mobile.data.protocol.RunBuildCommand
 import me.yuriisoft.buildnotify.mobile.data.protocol.WsEnvelope
-import me.yuriisoft.buildnotify.mobile.data.session.BuildSession
 import me.yuriisoft.buildnotify.mobile.feature.buildstatus.domain.repository.IBuildRepository
+import me.yuriisoft.buildnotify.mobile.network.connection.ActiveSession
 
 /**
- * Concrete [IBuildRepository] backed by a Ktor WebSocket via [BuildSession].
+ * Concrete [IBuildRepository] backed by the shared [ActiveSession].
  *
- * Translates between the wire protocol ([WsEnvelope] / [WsPayload]) and the
- * domain model ([BuildResult]).  Feature modules never see protocol types —
- * they depend only on the domain interface (DIP).
+ * Subscribes to [ActiveSession.incoming], filtering for [BuildResultPayload]
+ * and mapping to the domain [BuildResult]. Commands are sent through
+ * [ActiveSession.send]. No connection management here — SRP.
  */
 @Inject
 class BuildRepository(
-    private val session: BuildSession,
+    private val session: ActiveSession,
 ) : IBuildRepository {
 
-    override fun observeEvents(host: String, port: Int): Flow<BuildResult> =
-        session.connect(host, port)
-            .mapNotNull { payload -> (payload as? BuildResultPayload)?.result }
+    override fun observeEvents(): Flow<BuildResult> =
+        session.incoming
+            .filterIsInstance<BuildResultPayload>()
+            .map { it.result }
 
     override suspend fun cancelBuild(buildId: String) {
         session.send(WsEnvelope(payload = CancelBuildCommand(buildId)))

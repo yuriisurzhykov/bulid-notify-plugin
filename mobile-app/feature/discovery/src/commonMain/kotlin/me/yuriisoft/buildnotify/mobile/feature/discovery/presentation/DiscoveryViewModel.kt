@@ -8,12 +8,15 @@ import build_notify_mobile.feature.discovery.generated.resources.error_handshake
 import build_notify_mobile.feature.discovery.generated.resources.error_lost
 import build_notify_mobile.feature.discovery.generated.resources.error_refused
 import build_notify_mobile.feature.discovery.generated.resources.error_timeout
+import build_notify_mobile.feature.discovery.generated.resources.error_unknown
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import me.yuriisoft.buildnotify.mobile.core.communication.EventCommunication
 import me.yuriisoft.buildnotify.mobile.core.communication.StateCommunication
@@ -21,10 +24,10 @@ import me.yuriisoft.buildnotify.mobile.core.dispatchers.AppDispatchers
 import me.yuriisoft.buildnotify.mobile.core.platform.INetworkMonitor
 import me.yuriisoft.buildnotify.mobile.core.usecase.FlowUseCase
 import me.yuriisoft.buildnotify.mobile.core.usecase.NoParams
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionErrorReason
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionStatus
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.IConnectionRepository
+import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionManager
+import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionState
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.network.error.ConnectionErrorReason
 import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 
 /**
@@ -32,7 +35,7 @@ import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
  *
  *  1. [INetworkMonitor]       — gates mDNS scan (WiFi/Ethernet only)
  *  2. [observeHosts] use case — emits discovered hosts via NSD
- *  3. [connectionRepository]  — WebSocket lifecycle (connect / disconnect)
+ *  3. [connectionManager]     — WebSocket lifecycle (connect / disconnect)
  *
  * Auto-connects when exactly one host is found; shows [DiscoveryUiState.ServiceSelection]
  * when two or more hosts appear; falls back to [DiscoveryUiState.NothingFound] after
@@ -40,7 +43,7 @@ import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
  */
 class DiscoveryViewModel(
     private val observeHosts: FlowUseCase<NoParams, List<DiscoveredHost>>,
-    private val connectionRepository: IConnectionRepository,
+    private val connectionManager: ConnectionManager,
     private val networkMonitor: INetworkMonitor,
     private val dispatchers: AppDispatchers,
     private val state: StateCommunication.Mutable<DiscoveryUiState> = StateCommunication(
@@ -113,7 +116,7 @@ class DiscoveryViewModel(
     private fun onHostsReceived(hosts: List<DiscoveredHost>, timeoutJob: Job) {
         when (state.observe.value) {
             is DiscoveryUiState.Scanning,
-            is DiscoveryUiState.NothingFound -> {
+            is DiscoveryUiState.NothingFound       -> {
                 when {
                     hosts.isEmpty() -> Unit
                     hosts.size == 1 -> {
@@ -121,14 +124,14 @@ class DiscoveryViewModel(
                         connectToHost(hosts.first())
                     }
 
-                    else -> {
+                    else            -> {
                         timeoutJob.cancel()
                         state.put(DiscoveryUiState.ServiceSelection(hosts))
                     }
                 }
             }
 
-            is DiscoveryUiState.ServiceSelection -> {
+            is DiscoveryUiState.ServiceSelection   -> {
                 if (hosts.isEmpty()) {
                     state.put(DiscoveryUiState.NothingFound)
                 } else {
@@ -154,43 +157,46 @@ class DiscoveryViewModel(
 
         connectionJob = dispatchers.launchBackground(viewModelScope) {
             try {
-                connectionRepository.connect(host)
-                connectionRepository.status.collect { status ->
-                    when (status) {
-                        is ConnectionStatus.Connected -> {
-                            state.put(DiscoveryUiState.Connected(status.host))
-                            delay(navigateDelayMs)
-                            events.send(
-                                DiscoveryEvent.NavigateToBuild(
-                                    status.host.host,
-                                    status.host.port,
-                                ),
-                            )
-                        }
-
-                        is ConnectionStatus.Error -> {
-                            state.put(
-                                DiscoveryUiState.ConnectionFailed(
-                                    status.host,
-                                    formatErrorReason(status.reason),
-                                ),
-                            )
-                        }
-
-                        is ConnectionStatus.Connecting,
-                        is ConnectionStatus.Disconnected -> Unit
-                    }
-                }
+                connectionManager.connect(host)
+                connectionManager.state
+                    .onEach { connectionState -> handleConnectionState(connectionState) }
+                    .launchIn(this)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
                 state.put(
                     DiscoveryUiState.ConnectionFailed(
-                        host,
-                        TextResource.ResText(Res.string.error_connection_failed),
+                        hostResource = TextResource.RawText(host.name),
+                        reasonResource = TextResource.ResText(Res.string.error_connection_failed),
+                        host = host,
                     ),
                 )
             }
+        }
+    }
+
+    private suspend fun handleConnectionState(connectionState: ConnectionState) {
+        when (connectionState) {
+            is ConnectionState.Connected -> {
+                state.put(DiscoveryUiState.Connected(connectionState.host))
+                delay(navigateDelayMs)
+                events.send(DiscoveryEvent.NavigateToBuild)
+            }
+
+            is ConnectionState.Failed    -> {
+                state.put(
+                    DiscoveryUiState.ConnectionFailed(
+                        TextResource.RawText(connectionState.host.name),
+                        formatErrorReason(connectionState.reason),
+                        connectionState.host,
+                    ),
+                )
+            }
+
+            is ConnectionState.Connecting,
+            is ConnectionState.Reconnecting,
+            is ConnectionState.Idle,
+            ConnectionState.Disconnected -> Unit
         }
     }
 
@@ -211,18 +217,13 @@ class DiscoveryViewModel(
     }
 }
 
-private fun formatErrorReason(reason: ConnectionErrorReason): TextResource = when (reason) {
-    is ConnectionErrorReason.Timeout ->
-        TextResource.ResText(Res.string.error_timeout, listOf(reason.durationMs.toString()))
-
-    is ConnectionErrorReason.Refused ->
-        TextResource.ResText(Res.string.error_refused, listOf(reason.message))
-
-    is ConnectionErrorReason.HandshakeFailed ->
-        TextResource.ResText(Res.string.error_handshake, listOf(reason.message))
-
-    is ConnectionErrorReason.Lost ->
-        TextResource.ResText(Res.string.error_lost, listOf(reason.message))
-
-    is ConnectionErrorReason.Unknown -> TextResource.RawText(reason.message)
+private fun formatErrorReason(reason: ConnectionErrorReason): TextResource {
+    val resource = when (reason) {
+        is ConnectionErrorReason.Timeout         -> Res.string.error_timeout
+        is ConnectionErrorReason.Refused         -> Res.string.error_refused
+        is ConnectionErrorReason.HandshakeFailed -> Res.string.error_handshake
+        is ConnectionErrorReason.Lost            -> Res.string.error_lost
+        is ConnectionErrorReason.Unknown         -> Res.string.error_unknown
+    }
+    return TextResource.ResText(resource, reason.message)
 }

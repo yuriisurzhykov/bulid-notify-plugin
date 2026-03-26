@@ -9,7 +9,7 @@ import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.AndroidN
  * The component is created once and shared across:
  *   - [MainActivity] — for Compose UI (screens set)
  *   - [BuildMonitorService][me.yuriisoft.buildnotify.mobile.service.BuildMonitorService]
- *     — for [IConnectionRepository] observation
+ *     — for [ConnectionManager] observation
  *
  * Declared in `AndroidManifest.xml` via `android:name`.
  */

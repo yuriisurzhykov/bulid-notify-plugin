@@ -14,7 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import build_notify_mobile.feature.discovery.generated.resources.Res
 import build_notify_mobile.feature.discovery.generated.resources.action_cancel
 import build_notify_mobile.feature.discovery.generated.resources.connecting_title
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.components.button.GhostButton
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Divider
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text

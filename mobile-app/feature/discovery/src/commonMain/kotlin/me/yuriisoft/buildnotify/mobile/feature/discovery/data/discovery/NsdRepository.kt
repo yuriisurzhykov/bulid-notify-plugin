@@ -2,8 +2,8 @@ package me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery
 
 import kotlinx.coroutines.flow.Flow
 import me.tatarka.inject.annotations.Inject
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.INsdRepository
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 
 /**
  * Bridges the platform-specific [INsdDiscovery] with the domain-layer [INsdRepository].
@@ -16,6 +16,6 @@ class NsdRepository(
     private val discovery: INsdDiscovery,
 ) : INsdRepository {
 
-    override fun discoverHosts(serviceType: String): Flow<List<DiscoveredHost>> =
-        discovery.discoverServices(serviceType)
+    override fun discoverHosts(): Flow<List<DiscoveredHost>> =
+        discovery.discoverHosts()
 }

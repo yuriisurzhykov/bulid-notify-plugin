@@ -15,8 +15,8 @@ import me.yuriisoft.buildnotify.mobile.core.navigation.Navigator
 import me.yuriisoft.buildnotify.mobile.core.navigation.Screen
 import me.yuriisoft.buildnotify.mobile.core.navigation.ScreenTransitions
 import me.yuriisoft.buildnotify.mobile.core.platform.AppVersionProvider
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.feature.discovery.ui.DiscoveryContent
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 
 @Inject
 @Immutable
@@ -37,8 +37,7 @@ class DiscoveryScreen(
             vm.uiEvents.collect { event ->
                 when (event) {
                     is DiscoveryEvent.NavigateToBuild -> {
-                        val route = BuildStatusDestination.createRoute(event.host, event.port)
-                        navigator.navigateTo(route)
+                        navigator.navigateTo(BuildStatusDestination.route)
                     }
                 }
             }

@@ -4,34 +4,34 @@ import android.content.Context
 import android.content.Intent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionStatus
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.IConnectionRepository
+import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionManager
+import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionState
 
 /**
- * Bridges the domain-layer [IConnectionRepository] with the Android
- * [BuildMonitorService] foreground service.
+ * Bridges the [ConnectionManager] with the Android [BuildMonitorService]
+ * foreground service.
  *
  * Call [bind] once from [MainActivity.onCreate] with the activity's lifecycle scope.
  * The manager then automatically:
  *   - Starts the foreground service when a WebSocket connection is established.
  *   - Stops the foreground service when the connection is fully disconnected.
  *
- * Intermediate states ([ConnectionStatus.Connecting], [ConnectionStatus.Error])
+ * Intermediate states ([ConnectionState.Connecting], [ConnectionState.Reconnecting])
  * are intentionally ignored — the service handles reconnection UI via its own
- * status observer.
+ * state observer.
  */
 class ConnectionServiceManager(
     private val context: Context,
-    private val connectionRepo: IConnectionRepository,
+    private val connectionManager: ConnectionManager,
 ) {
 
     fun bind(lifecycleScope: CoroutineScope) {
         lifecycleScope.launch {
-            connectionRepo.status.collect { status ->
-                when (status) {
-                    is ConnectionStatus.Connected -> startService()
-                    is ConnectionStatus.Disconnected -> stopService()
-                    else -> Unit
+            connectionManager.state.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected    -> startService()
+                    is ConnectionState.Disconnected -> stopService()
+                    else                            -> Unit
                 }
             }
         }

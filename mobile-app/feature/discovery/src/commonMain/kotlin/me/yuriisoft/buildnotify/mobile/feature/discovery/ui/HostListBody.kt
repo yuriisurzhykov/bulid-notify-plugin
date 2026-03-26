@@ -6,7 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
 
 @Composable

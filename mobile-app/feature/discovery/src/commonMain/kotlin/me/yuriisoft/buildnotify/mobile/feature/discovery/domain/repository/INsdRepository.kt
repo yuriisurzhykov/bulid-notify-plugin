@@ -1,14 +1,13 @@
 package me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository
 
 import kotlinx.coroutines.flow.Flow
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 
 /**
  * Discovers Build Notify plugin instances on the local network via mDNS/NSD.
  *
- * Follows DIP: the domain layer depends only on this abstraction;
- * platform-specific implementations (NsdManager on Android, NSNetServiceBrowser
- * on iOS) live in androidMain / iosMain respectively.
+ * The domain layer depends only on this abstraction (DIP);
+ * the platform-specific implementation lives in the data layer.
  */
 interface INsdRepository {
 
@@ -18,10 +17,5 @@ interface INsdRepository {
      *
      * The Flow completes when the collector is cancelled, which also stops discovery.
      */
-    fun discoverHosts(serviceType: String = SERVICE_TYPE): Flow<List<DiscoveredHost>>
-
-    companion object {
-        /** mDNS service type registered by the Build Notify IDE plugin. */
-        const val SERVICE_TYPE = "_buildnotify._tcp"
-    }
+    fun discoverHosts(): Flow<List<DiscoveredHost>>
 }

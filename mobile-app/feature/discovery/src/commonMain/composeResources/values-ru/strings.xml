@@ -46,4 +46,5 @@
     <string name="error_refused">В подключении отказано: %1$s</string>
     <string name="error_handshake">Ошибка рукопожатия: %1$s</string>
     <string name="error_lost">Соединение потеряно: %1$s</string>
+    <string name="error_unknown">Произошла какая-то ошибка</string>
 </resources>

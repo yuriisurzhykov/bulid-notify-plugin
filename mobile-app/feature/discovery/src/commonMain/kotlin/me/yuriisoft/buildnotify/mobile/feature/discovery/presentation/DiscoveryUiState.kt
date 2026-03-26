@@ -1,6 +1,6 @@
 package me.yuriisoft.buildnotify.mobile.feature.discovery.presentation
 
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 
 sealed interface DiscoveryUiState {
@@ -16,8 +16,9 @@ sealed interface DiscoveryUiState {
     data class Connected(val host: DiscoveredHost) : DiscoveryUiState
 
     data class ConnectionFailed(
+        val hostResource: TextResource,
+        val reasonResource: TextResource,
         val host: DiscoveredHost,
-        val reason: TextResource,
     ) : DiscoveryUiState
 
     data object NothingFound : DiscoveryUiState

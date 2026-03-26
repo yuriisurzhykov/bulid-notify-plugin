@@ -17,8 +17,8 @@ import build_notify_mobile.feature.discovery.generated.resources.Res
 import build_notify_mobile.feature.discovery.generated.resources.discovery_subtitle
 import build_notify_mobile.feature.discovery.generated.resources.discovery_title
 import build_notify_mobile.feature.discovery.generated.resources.discovery_version_footer
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryUiState
+import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
 import me.yuriisoft.buildnotify.mobile.ui.components.icon.StatusIcon
 import me.yuriisoft.buildnotify.mobile.ui.components.layout.FlatRow
@@ -110,8 +110,8 @@ internal fun DiscoveryContent(
 
                     is DiscoveryUiState.Connected          -> ConnectedBody(currentState.host)
                     is DiscoveryUiState.ConnectionFailed   -> ConnectionFailedBody(
-                        host = currentState.host,
-                        reason = currentState.reason,
+                        host = currentState.hostResource,
+                        reason = currentState.reasonResource,
                         onRetry = { onHostSelected(currentState.host) },
                     )
 

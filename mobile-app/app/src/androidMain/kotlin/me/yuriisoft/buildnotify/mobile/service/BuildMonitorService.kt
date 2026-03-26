@@ -9,23 +9,23 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import me.yuriisoft.buildnotify.mobile.BuildNotifyApp
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.model.ConnectionStatus
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.IConnectionRepository
+import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionManager
+import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionState
 
 /**
  * Foreground service that keeps the WebSocket connection alive and posts
  * build-result notifications while the app is in the background.
  *
  * Lifecycle is driven by [ConnectionServiceManager]:
- *   - Started when [ConnectionStatus.Connected] is observed.
- *   - Stops itself when the connection transitions to [ConnectionStatus.Disconnected].
+ *   - Started when [ConnectionState.Connected] is observed.
+ *   - Stops itself when the connection transitions to [ConnectionState.Disconnected].
  *
  * Dependencies are retrieved from the application-scoped [AppComponent]
  * because Android [Service] instances cannot use constructor injection.
  */
 class BuildMonitorService : Service() {
 
-    private lateinit var connectionRepo: IConnectionRepository
+    private lateinit var connectionManager: ConnectionManager
     private lateinit var notificationHelper: NotificationHelper
 
     private val serviceScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
@@ -33,7 +33,7 @@ class BuildMonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         val component = (application as BuildNotifyApp).component
-        connectionRepo = component.connectionRepository
+        connectionManager = component.connectionManager
         notificationHelper = NotificationHelper(this)
 
         startForeground(
@@ -41,7 +41,7 @@ class BuildMonitorService : Service() {
             notificationHelper.persistentNotification(),
         )
 
-        observeConnectionStatus()
+        observeConnectionState()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -51,20 +51,16 @@ class BuildMonitorService : Service() {
         super.onDestroy()
     }
 
-    private fun observeConnectionStatus() {
+    private fun observeConnectionState() {
         serviceScope.launch {
-            connectionRepo.status.collect { status ->
-                when (status) {
-                    is ConnectionStatus.Connected ->
-                        notificationHelper.updatePersistent("Connected to ${status.host.name}")
-
-                    is ConnectionStatus.Connecting ->
-                        notificationHelper.updatePersistent("Connecting to ${status.host.name}…")
-
-                    is ConnectionStatus.Error ->
-                        notificationHelper.updatePersistent("Connection lost. Reconnecting…")
-
-                    is ConnectionStatus.Disconnected -> stopSelf()
+            connectionManager.state.collect { state ->
+                when (state) {
+                    is ConnectionState.Connected    -> notificationHelper.updatePersistent("Connected to ${state.host.name}")
+                    is ConnectionState.Connecting   -> notificationHelper.updatePersistent("Connecting to ${state.host.name}…")
+                    is ConnectionState.Reconnecting -> notificationHelper.updatePersistent("Reconnecting (attempt ${state.attempt})…")
+                    is ConnectionState.Failed       -> notificationHelper.updatePersistent("Connection lost")
+                    is ConnectionState.Disconnected -> stopSelf()
+                    is ConnectionState.Idle         -> Unit
                 }
             }
         }

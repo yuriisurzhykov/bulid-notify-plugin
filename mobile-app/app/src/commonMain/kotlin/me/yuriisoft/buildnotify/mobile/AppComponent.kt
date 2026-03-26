@@ -11,15 +11,28 @@ import me.yuriisoft.buildnotify.mobile.core.dispatchers.AppDispatchers
 import me.yuriisoft.buildnotify.mobile.core.navigation.Screen
 import me.yuriisoft.buildnotify.mobile.core.platform.AppVersionProvider
 import me.yuriisoft.buildnotify.mobile.core.platform.INetworkMonitor
-import me.yuriisoft.buildnotify.mobile.feature.discovery.data.connection.ConnectionManager
-import me.yuriisoft.buildnotify.mobile.feature.discovery.data.connection.ReconnectionPolicy
 import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.INsdDiscovery
 import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.NsdRepository
 import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.ObserveHostsUseCase
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.IConnectionRepository
 import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.INsdRepository
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryScreen
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryViewModel
+import me.yuriisoft.buildnotify.mobile.network.client.HttpClientProvider
+import me.yuriisoft.buildnotify.mobile.network.connection.ActiveSession
+import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionManager
+import me.yuriisoft.buildnotify.mobile.network.connection.ManagedConnection
+import me.yuriisoft.buildnotify.mobile.network.error.ErrorMapping
+import me.yuriisoft.buildnotify.mobile.network.error.ErrorRecognizer
+import me.yuriisoft.buildnotify.mobile.network.error.recognizers.HandshakeErrors
+import me.yuriisoft.buildnotify.mobile.network.error.recognizers.LostConnectionErrors
+import me.yuriisoft.buildnotify.mobile.network.error.recognizers.RefusedErrors
+import me.yuriisoft.buildnotify.mobile.network.error.recognizers.TimeoutErrors
+import me.yuriisoft.buildnotify.mobile.network.reconnection.ExponentialBackoff
+import me.yuriisoft.buildnotify.mobile.network.reconnection.ReconnectionStrategy
+import me.yuriisoft.buildnotify.mobile.network.transport.PayloadCodec
+import me.yuriisoft.buildnotify.mobile.network.transport.Transport
+import me.yuriisoft.buildnotify.mobile.network.transport.WebSocketTransport
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Composition Root — the only place in the project that sees every module.
@@ -32,6 +45,7 @@ import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryV
  * additional [@IntoSet][IntoSet] provider and supply any missing
  * ViewModel / use-case bindings below.
  */
+@AppScope
 @Component
 abstract class AppComponent(
     @get:Provides protected val nsdDiscovery: INsdDiscovery,
@@ -41,12 +55,11 @@ abstract class AppComponent(
 
     abstract val screens: Set<Screen>
 
-    abstract val connectionRepository: IConnectionRepository
+    abstract val connectionManager: ConnectionManager
+
+    // --- NSD discovery wiring ---
 
     protected val NsdRepository.bind: INsdRepository
-        @Provides get() = this
-
-    protected val ConnectionManager.bind: IConnectionRepository
         @Provides get() = this
 
     @Provides
@@ -59,17 +72,14 @@ abstract class AppComponent(
     protected fun json(): Json = Json { ignoreUnknownKeys = true }
 
     @Provides
-    protected fun reconnectionPolicy(): ReconnectionPolicy = ReconnectionPolicy()
-
-    @Provides
     protected fun discoveryViewModel(
         observeHosts: ObserveHostsUseCase,
-        connectionRepository: IConnectionRepository,
+        connectionManager: ConnectionManager,
         networkMonitor: INetworkMonitor,
         dispatchers: AppDispatchers,
     ): DiscoveryViewModel = DiscoveryViewModel(
         observeHosts = observeHosts,
-        connectionRepository = connectionRepository,
+        connectionManager = connectionManager,
         networkMonitor = networkMonitor,
         dispatchers = dispatchers,
     )
@@ -82,5 +92,52 @@ abstract class AppComponent(
     @Provides
     protected fun catalogScreen(screen: CatalogScreen): Screen = screen
 
-    companion object
+    // --- :core:network wiring (ISP: ManagedConnection → ActiveSession + ConnectionManager) ---
+
+    @Provides
+    protected fun payloadCodec(json: Json): PayloadCodec = PayloadCodec(json)
+
+    @Provides
+    protected fun transport(codec: PayloadCodec): Transport =
+        WebSocketTransport(HttpClientProvider().provide(), codec)
+
+    @Provides
+    protected fun reconnectionStrategy(): ReconnectionStrategy = ExponentialBackoff()
+
+    @Provides
+    protected fun errorRecognizers(): List<ErrorRecognizer> = listOf(
+        TimeoutErrors(),
+        RefusedErrors(),
+        HandshakeErrors(),
+        LostConnectionErrors(),
+    )
+
+    @Provides
+    protected fun errorMapping(recognizers: List<ErrorRecognizer>): ErrorMapping =
+        ErrorMapping(recognizers)
+
+    @AppScope
+    @Provides
+    protected fun managedConnection(
+        transport: Transport,
+        reconnection: ReconnectionStrategy,
+        errorMapping: ErrorMapping,
+        dispatchers: AppDispatchers,
+    ): ManagedConnection = ManagedConnection(
+        transport = transport,
+        reconnection = reconnection,
+        errorMapping = errorMapping,
+        heartbeatTimeout = HEARTBEAT_TIMEOUT,
+        dispatchers = dispatchers,
+    )
+
+    protected val ManagedConnection.bindSession: ActiveSession
+        @Provides get() = this
+
+    protected val ManagedConnection.bindManager: ConnectionManager
+        @Provides get() = this
+
+    companion object {
+        private val HEARTBEAT_TIMEOUT = 45.seconds
+    }
 }
