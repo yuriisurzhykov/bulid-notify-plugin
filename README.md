@@ -574,8 +574,6 @@ Please ensure your code:
 
 Copyright &copy; 2026 [YuriiSoft](https://www.yuriisoft.me). All rights reserved.
 
-Licensed under the [Apache License, Version 2.0](https://www.apache.org/licenses/LICENSE-2.0).
-
 ---
 
 <p align="center">
