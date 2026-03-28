@@ -57,5 +57,6 @@
     <string name="error_handshake">Handshake failed: %1$s</string>
     <string name="error_lost">Connection lost: %1$s</string>
     <string name="error_tls_pinning">Certificate fingerprint mismatch — server identity changed</string>
+    <string name="error_client_rejected">This device was rejected by the IDE.\nOpen IDE Settings → Build Notifier → Trusted Clients to re-pair.</string>
     <string name="error_unknown">Unknown error occurred</string>
 </resources>

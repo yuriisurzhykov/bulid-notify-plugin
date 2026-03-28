@@ -3,6 +3,8 @@ package me.yuriisoft.buildnotify.mobile.feature.discovery.ui
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -91,13 +93,24 @@ internal fun DiscoveryContent(
             AnimatedContent(
                 targetState = state,
                 modifier = Modifier.weight(1f),
-                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                transitionSpec = {
+                    val isForward = targetState.animateOrder > initialState.animateOrder
+                    val isBackward = targetState.animateOrder < initialState.animateOrder
+                    val isFade = targetState.animateOrder == initialState.animateOrder ||
+                            targetState.animateOrder < 0
+                    when {
+                        isForward  -> slideInHorizontally { fullWidth -> fullWidth } togetherWith slideOutHorizontally { fullWidth -> -fullWidth }
+                        isBackward -> slideInHorizontally { fullWidth -> -fullWidth } togetherWith slideOutHorizontally { fullWidth -> fullWidth }
+                        isFade     -> fadeIn() togetherWith fadeOut()
+                        else       -> fadeIn() togetherWith fadeOut()
+                    }
+                },
                 contentKey = { it::class.qualifiedName },
             ) { currentState ->
                 when (currentState) {
-                    is DiscoveryUiState.Idle               -> IdleBody(onStartScan = onStartScan)
-                    is DiscoveryUiState.Scanning           -> ScanningBody(onCancel = onCancel)
-                    is DiscoveryUiState.ServiceSelection   -> HostListBody(
+                    is DiscoveryUiState.Idle                -> IdleBody(onStartScan = onStartScan)
+                    is DiscoveryUiState.Scanning            -> ScanningBody(onCancel = onCancel)
+                    is DiscoveryUiState.ServiceSelection    -> HostListBody(
                         currentState.hosts,
                         onHostSelected,
                     )
@@ -109,25 +122,25 @@ internal fun DiscoveryContent(
                         onReject = onRejectPairing,
                     )
 
-                    is DiscoveryUiState.Connecting         -> ConnectingBody(
+                    is DiscoveryUiState.Connecting          -> ConnectingBody(
                         host = currentState.host,
                         onCancel = onCancel,
                     )
 
-                    is DiscoveryUiState.Connected          -> ConnectedBody(currentState.host)
-                    is DiscoveryUiState.ConnectionFailed   -> ConnectionFailedBody(
+                    is DiscoveryUiState.Connected           -> ConnectedBody(currentState.host)
+                    is DiscoveryUiState.ConnectionFailed    -> ConnectionFailedBody(
                         host = currentState.hostResource,
                         reason = currentState.reasonResource,
                         onRetry = { onHostSelected(currentState.host) },
                     )
 
-                    is DiscoveryUiState.NothingFound       -> EmptyBody(onRetry = onRetry)
-                    is DiscoveryUiState.ScanError          -> ErrorBody(
+                    is DiscoveryUiState.NothingFound        -> EmptyBody(onRetry = onRetry)
+                    is DiscoveryUiState.ScanError           -> ErrorBody(
                         message = currentState.message,
                         onRetry = onRetry,
                     )
 
-                    is DiscoveryUiState.NetworkUnavailable -> NetworkUnavailableBody()
+                    is DiscoveryUiState.NetworkUnavailable  -> NetworkUnavailableBody()
                 }
             }
 
@@ -141,16 +154,5 @@ internal fun DiscoveryContent(
                     .padding(vertical = spacing.regular),
             )
         }
-
-        /*SnackbarHost(
-            hostState = snackbarHostState,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        ) { data ->
-            Snackbar(
-                snackbarData = data,
-                backgroundColor = BuildNotifyTheme.colors.surface.elevated,
-                contentColor = BuildNotifyTheme.colors.content.primary,
-            )
-        }*/
     }
 }

@@ -8,17 +8,31 @@ import me.yuriisoft.buildnotify.mobile.ui.theme.color.semantic.StatusRole
 
 @Immutable
 sealed interface BuildStatus {
-    data object Running : BuildStatus
-    data object Success : BuildStatus
-    data object Failed : BuildStatus
-    data object Cancelled : BuildStatus
-}
 
-val BuildStatus.statusRole: StatusRole
-    @Composable @ReadOnlyComposable
-    get() = when (this) {
-        BuildStatus.Running -> BuildNotifyTheme.colors.status.info
-        BuildStatus.Success -> BuildNotifyTheme.colors.status.success
-        BuildStatus.Failed -> BuildNotifyTheme.colors.status.error
-        BuildStatus.Cancelled -> BuildNotifyTheme.colors.status.warning
+    @get:[Composable ReadOnlyComposable]
+    val statusRole: StatusRole
+
+    data object Running : BuildStatus {
+        override val statusRole: StatusRole
+            @[Composable ReadOnlyComposable]
+            get() = BuildNotifyTheme.colors.status.info
     }
+
+    data object Success : BuildStatus {
+        override val statusRole: StatusRole
+            @[Composable ReadOnlyComposable]
+            get() = BuildNotifyTheme.colors.status.success
+    }
+
+    data object Failed : BuildStatus {
+        override val statusRole: StatusRole
+            @[Composable ReadOnlyComposable]
+            get() = BuildNotifyTheme.colors.status.error
+    }
+
+    data object Cancelled : BuildStatus {
+        override val statusRole: StatusRole
+            @[Composable ReadOnlyComposable]
+            get() = BuildNotifyTheme.colors.status.warning
+    }
+}

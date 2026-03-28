@@ -1,37 +1,28 @@
 package me.yuriisoft.buildnotify.mobile
 
-import com.yuriisurzhykov.buildnotifier.feature.catalog.CatalogScreen
+import com.yuriisurzhykov.buildnotifier.feature.catalog.CatalogComponent
 import kotlinx.serialization.json.Json
 import me.tatarka.inject.annotations.Component
 import me.tatarka.inject.annotations.IntoSet
 import me.tatarka.inject.annotations.Provides
 import me.yuriisoft.buildnotify.mobile.core.dispatchers.AppDispatchers
 import me.yuriisoft.buildnotify.mobile.core.navigation.Screen
+import me.yuriisoft.buildnotify.mobile.core.navigation.StartRoute
 import me.yuriisoft.buildnotify.mobile.core.platform.AppVersionProvider
 import me.yuriisoft.buildnotify.mobile.core.platform.INetworkMonitor
-import me.yuriisoft.buildnotify.mobile.feature.buildstatus.presentation.BuildStatusScreen
+import me.yuriisoft.buildnotify.mobile.feature.buildstatus.di.BuildStatusComponent
 import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.INsdDiscovery
-import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.NsdRepository
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.ObserveHostsUseCase
-import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.repository.INsdRepository
-import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryScreen
-import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryViewModel
+import me.yuriisoft.buildnotify.mobile.feature.discovery.di.DiscoveryComponent
+import me.yuriisoft.buildnotify.mobile.navigation.ConnectionAwareStartRoute
+import me.yuriisoft.buildnotify.mobile.network.NetworkComponent
 import me.yuriisoft.buildnotify.mobile.network.client.HttpClientProvider
 import me.yuriisoft.buildnotify.mobile.network.connection.ActiveSession
 import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionManager
 import me.yuriisoft.buildnotify.mobile.network.connection.ManagedConnection
 import me.yuriisoft.buildnotify.mobile.network.error.ErrorMapping
-import me.yuriisoft.buildnotify.mobile.network.error.ErrorRecognizer
-import me.yuriisoft.buildnotify.mobile.network.error.recognizers.HandshakeErrors
-import me.yuriisoft.buildnotify.mobile.network.error.recognizers.LostConnectionErrors
-import me.yuriisoft.buildnotify.mobile.network.error.recognizers.RefusedErrors
-import me.yuriisoft.buildnotify.mobile.network.error.recognizers.TimeoutErrors
-import me.yuriisoft.buildnotify.mobile.network.reconnection.ExponentialBackoff
 import me.yuriisoft.buildnotify.mobile.network.reconnection.ReconnectionStrategy
 import me.yuriisoft.buildnotify.mobile.network.tls.TrustedServers
-import me.yuriisoft.buildnotify.mobile.network.transport.PayloadCodec
 import me.yuriisoft.buildnotify.mobile.network.transport.Transport
-import me.yuriisoft.buildnotify.mobile.network.transport.WebSocketTransport
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -53,16 +44,16 @@ abstract class AppComponent(
     @get:Provides val appVersionProvider: AppVersionProvider,
     @get:Provides protected val trustedServers: TrustedServers,
     @get:Provides protected val httpClientProvider: HttpClientProvider,
-) {
+) : DiscoveryComponent,
+    NetworkComponent,
+    BuildStatusComponent,
+    CatalogComponent {
 
     abstract val screens: Set<Screen>
-
     abstract val connectionManager: ConnectionManager
+    abstract val startRoute: StartRoute
 
-    // --- NSD discovery wiring ---
-
-    protected val NsdRepository.bind: INsdRepository
-        @Provides get() = this
+    // --- App-level bindings only ---
 
     @Provides
     protected fun dispatchers(): AppDispatchers = AppDispatchers.Default()
@@ -71,54 +62,9 @@ abstract class AppComponent(
     protected fun json(): Json = Json { ignoreUnknownKeys = true }
 
     @Provides
-    protected fun discoveryViewModel(
-        observeHosts: ObserveHostsUseCase,
+    protected fun startRoute(
         connectionManager: ConnectionManager,
-        networkMonitor: INetworkMonitor,
-        trustedServers: TrustedServers,
-        dispatchers: AppDispatchers,
-    ): DiscoveryViewModel = DiscoveryViewModel(
-        observeHosts = observeHosts,
-        connectionManager = connectionManager,
-        networkMonitor = networkMonitor,
-        trustedServers = trustedServers,
-        dispatchers = dispatchers,
-    )
-
-    @IntoSet
-    @Provides
-    protected fun discoveryScreen(screen: DiscoveryScreen): Screen = screen
-
-    @IntoSet
-    @Provides
-    protected fun buildStatusScreen(screen: BuildStatusScreen): Screen = screen
-
-    @IntoSet
-    @Provides
-    protected fun catalogScreen(screen: CatalogScreen): Screen = screen
-
-    // --- :core:network wiring (ISP: ManagedConnection → ActiveSession + ConnectionManager) ---
-    @Provides
-    protected fun payloadCodec(json: Json): PayloadCodec = PayloadCodec(json)
-
-    @Provides
-    protected fun transport(clientProvider: HttpClientProvider, codec: PayloadCodec): Transport =
-        WebSocketTransport(clientProvider, codec)
-
-    @Provides
-    protected fun reconnectionStrategy(): ReconnectionStrategy = ExponentialBackoff()
-
-    @Provides
-    protected fun errorRecognizers(): List<ErrorRecognizer> = listOf(
-        TimeoutErrors(),
-        RefusedErrors(),
-        HandshakeErrors(),
-        LostConnectionErrors(),
-    )
-
-    @Provides
-    protected fun errorMapping(recognizers: List<ErrorRecognizer>): ErrorMapping =
-        ErrorMapping(recognizers)
+    ): StartRoute = ConnectionAwareStartRoute(connectionManager)
 
     @AppScope
     @Provides

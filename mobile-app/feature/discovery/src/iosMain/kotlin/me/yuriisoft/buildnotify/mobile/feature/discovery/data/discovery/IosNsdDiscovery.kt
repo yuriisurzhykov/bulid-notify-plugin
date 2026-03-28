@@ -24,6 +24,11 @@ import platform.darwin.NSObject
  * The browser is scheduled on the main run loop by default; the [callbackFlow]
  * bridge makes delegate callbacks safe to consume from any coroutine dispatcher.
  *
+ * The resolved TXT record is now also queried for the `id` key — the stable
+ * per-process UUID advertised by the plugin's [InstanceIdentity] service.
+ * When present, it is stored in [DiscoveredHost.instanceId] and used by
+ * [DiscoveryViewModel] as the [TrustedServers] lookup key.
+ *
  * Cancelling the collecting coroutine stops the Bonjour browse session and
  * clears all delegate references to prevent retain cycles.
  */
@@ -58,6 +63,7 @@ class IosNsdDiscovery : INsdDiscovery {
                             port = sender.port.toInt(),
                             scheme = txt["scheme"] ?: "ws",
                             fingerprint = txt["fp"],
+                            instanceId = txt["id"],
                         )
                         resolving.remove(sender)
                         sendSnapshot()

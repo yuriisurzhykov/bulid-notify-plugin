@@ -19,7 +19,10 @@ class MainActivity : ComponentActivity() {
             .bind(lifecycleScope)
 
         setContent {
-            App(screens = component.screens)
+            App(
+                screens = component.screens,
+                startRoute = component.startRoute,
+            )
         }
     }
 }

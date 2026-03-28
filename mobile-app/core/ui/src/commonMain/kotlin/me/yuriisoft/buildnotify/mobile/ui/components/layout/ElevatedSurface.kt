@@ -2,6 +2,7 @@ package me.yuriisoft.buildnotify.mobile.ui.components.layout
 
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -12,6 +13,7 @@ import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
 fun ElevatedSurface(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    contentAlignment: Alignment = Alignment.TopStart,
     color: Color = BuildNotifyTheme.colors.surface.elevated,
     contentColor: Color = BuildNotifyTheme.colors.content.onElevated,
     shape: Shape = BuildNotifyTheme.shapes.medium,
@@ -21,6 +23,7 @@ fun ElevatedSurface(
     Surface(
         modifier = modifier,
         onClick = onClick,
+        contentAlignment = contentAlignment,
         color = color,
         contentColor = contentColor,
         shape = shape,

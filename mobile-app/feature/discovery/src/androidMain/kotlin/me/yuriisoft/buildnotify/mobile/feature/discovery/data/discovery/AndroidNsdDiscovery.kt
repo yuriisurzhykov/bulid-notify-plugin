@@ -17,6 +17,12 @@ import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
  * on the local network. Each found service is resolved to obtain its IP and
  * port before being emitted.
  *
+ * The resolved TXT attributes are now also queried for the `id` key, which
+ * the plugin's [InstanceIdentity] service advertises as a stable per-process
+ * UUID. When present, this value is stored in [DiscoveredHost.instanceId] and
+ * used by [DiscoveryViewModel] as the [TrustedServers] lookup key instead of
+ * the mutable service name.
+ *
  * Cancelling the collecting coroutine stops the NSD discovery session.
  */
 class AndroidNsdDiscovery(
@@ -57,6 +63,7 @@ class AndroidNsdDiscovery(
                                 port = info.port,
                                 scheme = attrs?.txtString("scheme") ?: "ws",
                                 fingerprint = attrs?.txtString("fp"),
+                                instanceId = attrs?.txtString("id"),
                             )
                             trySend(hosts.values.toList())
                         }

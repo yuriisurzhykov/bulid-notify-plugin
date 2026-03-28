@@ -5,30 +5,52 @@ import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 
 sealed interface DiscoveryUiState {
 
-    data object Idle : DiscoveryUiState
+    val animateOrder: Int
 
-    data object Scanning : DiscoveryUiState
+    data object Idle : DiscoveryUiState {
+        override val animateOrder: Int = 0
+    }
 
-    data class ServiceSelection(val hosts: List<DiscoveredHost>) : DiscoveryUiState
+    data object Scanning : DiscoveryUiState {
+        override val animateOrder: Int = 1
+    }
+
+    data class ServiceSelection(val hosts: List<DiscoveredHost>) : DiscoveryUiState {
+        override val animateOrder: Int = 2
+    }
 
     data class PairingConfirmation(
         val host: DiscoveredHost,
         val fingerprint: String,
-    ) : DiscoveryUiState
+    ) : DiscoveryUiState {
+        override val animateOrder: Int = 3
+    }
 
-    data class Connecting(val host: DiscoveredHost) : DiscoveryUiState
+    data class Connecting(val host: DiscoveredHost) : DiscoveryUiState {
+        override val animateOrder: Int = 4
+    }
 
-    data class Connected(val host: DiscoveredHost) : DiscoveryUiState
+    data class Connected(val host: DiscoveredHost) : DiscoveryUiState {
+        override val animateOrder: Int = 5
+    }
 
     data class ConnectionFailed(
         val hostResource: TextResource,
         val reasonResource: TextResource,
         val host: DiscoveredHost,
-    ) : DiscoveryUiState
+    ) : DiscoveryUiState {
+        override val animateOrder: Int = 5
+    }
 
-    data object NothingFound : DiscoveryUiState
+    data object NothingFound : DiscoveryUiState {
+        override val animateOrder: Int = 2
+    }
 
-    data class ScanError(val message: String) : DiscoveryUiState
+    data class ScanError(val message: String) : DiscoveryUiState {
+        override val animateOrder: Int = 2
+    }
 
-    data object NetworkUnavailable : DiscoveryUiState
+    data object NetworkUnavailable : DiscoveryUiState {
+        override val animateOrder: Int = -1
+    }
 }

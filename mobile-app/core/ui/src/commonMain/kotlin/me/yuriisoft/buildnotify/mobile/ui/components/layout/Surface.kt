@@ -12,6 +12,7 @@ import androidx.compose.material.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -25,6 +26,7 @@ import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
 fun Surface(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
+    contentAlignment: Alignment = Alignment.TopStart,
     color: Color = BuildNotifyTheme.colors.surface.primary,
     contentColor: Color = BuildNotifyTheme.colors.content.primary,
     shape: Shape = BuildNotifyTheme.shapes.medium,
@@ -61,7 +63,8 @@ fun Surface(
                 )
                 .clip(shape)
                 .then(clickableModifier),
-            content = content
+            contentAlignment = contentAlignment,
+            content = content,
         )
     }
 }

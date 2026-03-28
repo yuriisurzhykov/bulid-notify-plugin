@@ -38,11 +38,7 @@ class DiscoveryScreen(
             vm.uiEvents.collect { event ->
                 when (event) {
                     is DiscoveryEvent.NavigateToBuild -> {
-                        navigator.navigateTo(BuildStatusDestination.route)
-                    }
-
-                    is DiscoveryEvent.NetworkRestored -> {
-//                        snackbarHostState.showSnackbar(getString(Res.string.network_restored))
+                        navigator.navigateTo(BuildStatusDestination.route, true)
                     }
                 }
             }

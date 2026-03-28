@@ -57,5 +57,6 @@
     <string name="error_handshake">Ошибка рукопожатия: %1$s</string>
     <string name="error_lost">Соединение потеряно: %1$s</string>
     <string name="error_tls_pinning">Несоответствие отпечатка сертификата — идентификация сервера изменилась</string>
+    <string name="error_client_rejected">Это устройство было отклонено IDE.\nОткройте Настройки IDE → Build Notifier → Доверенные клиенты, чтобы выполнить повторное сопряжение.</string>
     <string name="error_unknown">Произошла какая-то ошибка</string>
 </resources>

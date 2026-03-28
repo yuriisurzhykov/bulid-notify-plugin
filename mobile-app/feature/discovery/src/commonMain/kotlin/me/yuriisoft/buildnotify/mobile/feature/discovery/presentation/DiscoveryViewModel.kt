@@ -3,6 +3,7 @@ package me.yuriisoft.buildnotify.mobile.feature.discovery.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import build_notify_mobile.feature.discovery.generated.resources.Res
+import build_notify_mobile.feature.discovery.generated.resources.error_client_rejected
 import build_notify_mobile.feature.discovery.generated.resources.error_connection_failed
 import build_notify_mobile.feature.discovery.generated.resources.error_handshake
 import build_notify_mobile.feature.discovery.generated.resources.error_lost
@@ -18,12 +19,13 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import me.tatarka.inject.annotations.Inject
 import me.yuriisoft.buildnotify.mobile.core.communication.EventCommunication
 import me.yuriisoft.buildnotify.mobile.core.communication.StateCommunication
 import me.yuriisoft.buildnotify.mobile.core.dispatchers.AppDispatchers
 import me.yuriisoft.buildnotify.mobile.core.platform.INetworkMonitor
-import me.yuriisoft.buildnotify.mobile.core.usecase.FlowUseCase
 import me.yuriisoft.buildnotify.mobile.core.usecase.NoParams
+import me.yuriisoft.buildnotify.mobile.feature.discovery.domain.ObserveHostsUseCase
 import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionManager
 import me.yuriisoft.buildnotify.mobile.network.connection.ConnectionState
 import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
@@ -32,20 +34,23 @@ import me.yuriisoft.buildnotify.mobile.network.tls.TrustedServers
 import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
 
 /**
- * Combines three data sources into a single [DiscoveryUiState]:
+ * ViewModel for the discovery / connection flow.
  *
- *  1. [INetworkMonitor]       — gates mDNS scan (WiFi/Ethernet only)
- *  2. [observeHosts] use case — emits discovered hosts via NSD
- *  3. [connectionManager]     — WebSocket lifecycle (connect / disconnect)
+ * Drives [DiscoveryUiState] transitions and fires one-shot [DiscoveryEvent]s.
  *
- * The initial state is [DiscoveryUiState.Idle]; scanning begins only when
- * the user explicitly taps "Start Scan". Network loss from any state
- * transitions to [DiscoveryUiState.NetworkUnavailable] and disconnects
- * all active pipelines. Network restoration fires a one-shot
- * [DiscoveryEvent.NetworkRestored] event and transitions back to Idle.
+ * ### Phase 5 change
+ * [formatErrorReason] now handles [ConnectionErrorReason.ClientRejected] with a
+ * dedicated user-facing string (`error_client_rejected`) that guides the user to
+ * re-pair via IDE settings. All other branches are unchanged.
+ *
+ * The retry button visible in [DiscoveryUiState.ConnectionFailed] is intentionally
+ * **still shown** even for `ClientRejected` — it lets the user try again after
+ * they have cleared the rejection in the plugin settings, without having to
+ * restart the app.
  */
+@Inject
 class DiscoveryViewModel(
-    private val observeHosts: FlowUseCase<NoParams, List<DiscoveredHost>>,
+    private val observeHosts: ObserveHostsUseCase,
     private val connectionManager: ConnectionManager,
     private val networkMonitor: INetworkMonitor,
     private val trustedServers: TrustedServers,
@@ -55,6 +60,7 @@ class DiscoveryViewModel(
     ),
     private val events: EventCommunication.Mutable<DiscoveryEvent> = EventCommunication(),
     private val scanTimeoutMs: Long = SCAN_TIMEOUT_MS,
+    private val navigateDelayMs: Long = NAVIGATE_DELAY_MS,
 ) : ViewModel() {
 
     val uiState: StateFlow<DiscoveryUiState> = state.observe
@@ -68,21 +74,22 @@ class DiscoveryViewModel(
     }
 
     fun selectHost(host: DiscoveredHost) {
-        if (host.isSecure && host.fingerprint != null && !trustedServers.isPinned(host.name)) {
-            val pairingConfirmation = DiscoveryUiState.PairingConfirmation(
-                host = host,
-                fingerprint = host.fingerprint.orEmpty()
-            )
-            state.put(pairingConfirmation)
-            return
+        when {
+            host.isSecure && !trustedServers.isPinned(host.trustKey) -> {
+                val pairingConfirmation = DiscoveryUiState.PairingConfirmation(
+                    host = host,
+                    fingerprint = host.fingerprint.orEmpty()
+                )
+                state.put(pairingConfirmation)
+            }
+
+            else                                                     -> connectToHost(host)
         }
-        connectToHost(host)
     }
 
     fun confirmPairing() {
-        val current = state.observe.value
-        if (current !is DiscoveryUiState.PairingConfirmation) return
-        trustedServers.pin(current.host.name, current.fingerprint)
+        val current = state.observe.value as? DiscoveryUiState.PairingConfirmation ?: return
+        trustedServers.pin(current.host.trustKey, current.host.fingerprint ?: return)
         connectToHost(current.host)
     }
 
@@ -98,8 +105,6 @@ class DiscoveryViewModel(
         cancelAll()
         state.put(DiscoveryUiState.Idle)
     }
-
-    // region internal machinery
 
     private fun observeNetwork() {
         dispatchers.launchBackground(viewModelScope) {
@@ -140,18 +145,16 @@ class DiscoveryViewModel(
     private fun onHostsReceived(hosts: List<DiscoveredHost>, timeoutJob: Job) {
         when (state.observe.value) {
             is DiscoveryUiState.Scanning,
-            is DiscoveryUiState.NothingFound       -> {
-                when {
-                    hosts.isEmpty() -> Unit
-                    hosts.size == 1 -> {
-                        timeoutJob.cancel()
-                        selectHost(hosts.first())
-                    }
+            is DiscoveryUiState.NothingFound       -> when {
+                hosts.isEmpty() -> Unit
+                hosts.size == 1 -> {
+                    timeoutJob.cancel()
+                    selectHost(hosts.first())
+                }
 
-                    else            -> {
-                        timeoutJob.cancel()
-                        state.put(DiscoveryUiState.ServiceSelection(hosts))
-                    }
+                else            -> {
+                    timeoutJob.cancel()
+                    state.put(DiscoveryUiState.ServiceSelection(hosts))
                 }
             }
 
@@ -188,7 +191,7 @@ class DiscoveryViewModel(
                     .launchIn(this)
             } catch (e: CancellationException) {
                 throw e
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 state.put(
                     DiscoveryUiState.ConnectionFailed(
                         hostResource = TextResource.RawText(host.name),
@@ -208,9 +211,9 @@ class DiscoveryViewModel(
                 connectionManager.disconnect()
                 state.put(
                     DiscoveryUiState.ConnectionFailed(
-                        TextResource.RawText(connectionState.host.name),
-                        formatErrorReason(connectionState.reason),
-                        connectionState.host,
+                        hostResource = TextResource.RawText(connectionState.host.name),
+                        reasonResource = formatErrorReason(connectionState.reason),
+                        host = connectionState.host,
                     ),
                 )
             }
@@ -224,6 +227,7 @@ class DiscoveryViewModel(
 
     private suspend fun handleConnectedState(connectionState: ConnectionState.Connected) {
         state.put(DiscoveryUiState.Connected(connectionState.host))
+        if (navigateDelayMs > 0) delay(navigateDelayMs)
         events.send(DiscoveryEvent.NavigateToBuild)
     }
 
@@ -241,17 +245,30 @@ class DiscoveryViewModel(
 
     companion object {
         private const val SCAN_TIMEOUT_MS = 10_000L
-        private const val NAVIGATE_DELAY_MS = 800L
+        private const val NAVIGATE_DELAY_MS = 300L
     }
 }
 
+/**
+ * Maps a typed [ConnectionErrorReason] to a [TextResource] for display in
+ * [DiscoveryUiState.ConnectionFailed].
+ *
+ * The [ConnectionErrorReason.message] field is **not** surfaced for
+ * `ClientRejected` because the raw exception message is a technical string
+ * (`"Client explicitly rejected"`) not suitable for end users. The resource
+ * string is used instead.
+ */
 private fun formatErrorReason(reason: ConnectionErrorReason): TextResource {
     val resource = when (reason) {
         is ConnectionErrorReason.Timeout         -> Res.string.error_timeout
         is ConnectionErrorReason.Refused         -> Res.string.error_refused
         is ConnectionErrorReason.HandshakeFailed -> Res.string.error_handshake
         is ConnectionErrorReason.Lost            -> Res.string.error_lost
+        is ConnectionErrorReason.ClientRejected  -> Res.string.error_client_rejected
         is ConnectionErrorReason.Unknown         -> Res.string.error_unknown
     }
-    return TextResource.ResText(resource, reason.message)
+    return when (reason) {
+        is ConnectionErrorReason.ClientRejected -> TextResource.ResText(resource)
+        else                                    -> TextResource.ResText(resource, reason.message)
+    }
 }

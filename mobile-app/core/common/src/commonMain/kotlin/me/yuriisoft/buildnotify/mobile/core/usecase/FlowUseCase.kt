@@ -25,12 +25,12 @@ import kotlinx.coroutines.flow.Flow
  */
 interface FlowUseCase<in Params, out T> {
 
-    operator fun invoke(params: Params): Flow<T>
+    fun invoke(params: Params): Flow<T>
 
     abstract class Abstract<in Params, out T> : FlowUseCase<Params, T> {
 
         protected abstract fun execute(params: Params): Flow<T>
 
-        final override operator fun invoke(params: Params): Flow<T> = execute(params)
+        final override fun invoke(params: Params): Flow<T> = execute(params)
     }
 }

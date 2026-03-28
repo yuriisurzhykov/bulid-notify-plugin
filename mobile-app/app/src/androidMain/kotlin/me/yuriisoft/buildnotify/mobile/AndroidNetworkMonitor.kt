@@ -31,15 +31,30 @@ class AndroidNetworkMonitor(
 
     private val connectivityManager: ConnectivityManager? =
         context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+    private val validNetworks = mutableSetOf<Network>()
 
     override val isNetworkAvailable: StateFlow<Boolean> = callbackFlow {
         val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                trySend(true)
+            override fun onCapabilitiesChanged(
+                network: Network,
+                networkCapabilities: NetworkCapabilities
+            ) {
+                val isValidNetwork = hasMatchingNetwork(networkCapabilities)
+                if (isValidNetwork) {
+                    validNetworks.add(network)
+                } else {
+                    validNetworks.remove(network)
+                }
+                trySend(validNetworks.isNotEmpty())
+            }
+
+            override fun onUnavailable() {
+                trySend(false)
             }
 
             override fun onLost(network: Network) {
-                trySend(hasMatchingNetwork())
+                validNetworks.remove(network)
+                trySend(validNetworks.isNotEmpty())
             }
         }
 
@@ -58,7 +73,7 @@ class AndroidNetworkMonitor(
         .stateIn(
             scope = CoroutineScope(Dispatchers.Default),
             started = SharingStarted.Eagerly,
-            initialValue = hasMatchingNetwork(),
+            initialValue = hasMatchingNetwork(null),
         )
 
     /**
@@ -66,10 +81,9 @@ class AndroidNetworkMonitor(
      * re-evaluating availability after a single network is lost (another
      * qualifying network may still be active).
      */
-    private fun hasMatchingNetwork(): Boolean {
-        val capabilities = connectivityManager
-            ?.getNetworkCapabilities(connectivityManager.activeNetwork)
-            ?: return false
+    private fun hasMatchingNetwork(capabilities: NetworkCapabilities?): Boolean {
+        val capabilities = capabilities ?: connectivityManager
+            ?.getNetworkCapabilities(connectivityManager.activeNetwork) ?: return false
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                 capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
     }
