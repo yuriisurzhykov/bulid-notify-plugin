@@ -55,7 +55,6 @@ class DiscoveryViewModel(
     ),
     private val events: EventCommunication.Mutable<DiscoveryEvent> = EventCommunication(),
     private val scanTimeoutMs: Long = SCAN_TIMEOUT_MS,
-    private val navigateDelayMs: Long = NAVIGATE_DELAY_MS,
 ) : ViewModel() {
 
     val uiState: StateFlow<DiscoveryUiState> = state.observe
@@ -63,7 +62,6 @@ class DiscoveryViewModel(
 
     private var discoveryJob: Job? = null
     private var connectionJob: Job? = null
-    private var networkAvailableOnce = false
 
     init {
         observeNetwork()
@@ -71,7 +69,11 @@ class DiscoveryViewModel(
 
     fun selectHost(host: DiscoveredHost) {
         if (host.isSecure && host.fingerprint != null && !trustedServers.isPinned(host.name)) {
-            state.put(DiscoveryUiState.PairingConfirmation(host, host.fingerprint.orEmpty()))
+            val pairingConfirmation = DiscoveryUiState.PairingConfirmation(
+                host = host,
+                fingerprint = host.fingerprint.orEmpty()
+            )
+            state.put(pairingConfirmation)
             return
         }
         connectToHost(host)
@@ -105,13 +107,9 @@ class DiscoveryViewModel(
                 if (!available) {
                     cancelAll()
                     connectionManager.disconnect()
-                    state.put(DiscoveryUiState.NetworkUnavailable)
+                    state.update { DiscoveryUiState.NetworkUnavailable }
                 } else {
-                    if (networkAvailableOnce) {
-                        events.send(DiscoveryEvent.NetworkRestored)
-                    }
-                    networkAvailableOnce = true
-                    state.put(DiscoveryUiState.Idle)
+                    state.update { DiscoveryUiState.Idle }
                 }
             }
         }
@@ -130,7 +128,7 @@ class DiscoveryViewModel(
                 }
             }
 
-            observeHosts(NoParams)
+            observeHosts.invoke(NoParams)
                 .catch { e ->
                     timeoutJob.cancel()
                     state.put(DiscoveryUiState.ScanError(e.message.orEmpty()))
@@ -204,13 +202,9 @@ class DiscoveryViewModel(
 
     private suspend fun handleConnectionState(connectionState: ConnectionState) {
         when (connectionState) {
-            is ConnectionState.Connected -> {
-                state.put(DiscoveryUiState.Connected(connectionState.host))
-                delay(navigateDelayMs)
-                events.send(DiscoveryEvent.NavigateToBuild)
-            }
+            is ConnectionState.Connected    -> handleConnectedState(connectionState)
 
-            is ConnectionState.Failed    -> {
+            is ConnectionState.Failed       -> {
                 connectionManager.disconnect()
                 state.put(
                     DiscoveryUiState.ConnectionFailed(
@@ -224,8 +218,13 @@ class DiscoveryViewModel(
             is ConnectionState.Connecting,
             is ConnectionState.Reconnecting,
             is ConnectionState.Idle,
-            ConnectionState.Disconnected -> Unit
+            is ConnectionState.Disconnected -> Unit
         }
+    }
+
+    private suspend fun handleConnectedState(connectionState: ConnectionState.Connected) {
+        state.put(DiscoveryUiState.Connected(connectionState.host))
+        events.send(DiscoveryEvent.NavigateToBuild)
     }
 
     private fun cancelAll() {
