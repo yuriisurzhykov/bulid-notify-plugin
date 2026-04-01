@@ -10,7 +10,8 @@
 
     <application
         android:name=".BuildNotifyApp"
-        android:label="Build Notify"
+        android:icon="@drawable/ic_launcher"
+        android:label="@string/app_name"
         android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen">
 
         <activity

@@ -15,7 +15,7 @@ import build_notify_mobile.feature.discovery.generated.resources.idle_start_scan
 import build_notify_mobile.feature.discovery.generated.resources.idle_title
 import me.yuriisoft.buildnotify.mobile.ui.components.button.SecondaryButton
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
-import me.yuriisoft.buildnotify.mobile.ui.components.icon.StatusIcon
+import me.yuriisoft.buildnotify.mobile.ui.components.icon.BodyIcon
 import me.yuriisoft.buildnotify.mobile.ui.resource.ImageResource
 import me.yuriisoft.buildnotify.mobile.ui.resource.textResource
 import me.yuriisoft.buildnotify.mobile.ui.theme.BuildNotifyTheme
@@ -30,7 +30,7 @@ internal fun IdleBody(onStartScan: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            StatusIcon(
+            BodyIcon(
                 containerColor = primary.container,
                 contentColor = primary.onContainer,
                 image = ImageResource.VectorImage(RadarIcon),

@@ -13,6 +13,8 @@ internal val FixedIconDimensions = IconDimensions(
     small = 16.dp,
     regular = 24.dp,
     large = 40.dp,
+    xLarge = 64.dp,
+    xxLarge = 96.dp,
 )
 
 internal val FixedStrokeDimensions = StrokeDimensions(

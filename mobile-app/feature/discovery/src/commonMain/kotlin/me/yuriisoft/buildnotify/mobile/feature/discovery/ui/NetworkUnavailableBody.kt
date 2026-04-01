@@ -13,7 +13,7 @@ import build_notify_mobile.feature.discovery.generated.resources.Res
 import build_notify_mobile.feature.discovery.generated.resources.network_unavailable_body
 import build_notify_mobile.feature.discovery.generated.resources.network_unavailable_title
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
-import me.yuriisoft.buildnotify.mobile.ui.components.icon.StatusIcon
+import me.yuriisoft.buildnotify.mobile.ui.components.icon.BodyIcon
 import me.yuriisoft.buildnotify.mobile.ui.icons.InfoIcon
 import me.yuriisoft.buildnotify.mobile.ui.resource.ImageResource
 import me.yuriisoft.buildnotify.mobile.ui.resource.textResource
@@ -30,7 +30,7 @@ internal fun NetworkUnavailableBody() {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            StatusIcon(
+            BodyIcon(
                 containerColor = warning.container,
                 contentColor = warning.onContainer,
                 image = infoIcon,

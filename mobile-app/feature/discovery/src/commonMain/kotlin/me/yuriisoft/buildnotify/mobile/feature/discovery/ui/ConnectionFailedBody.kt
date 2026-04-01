@@ -16,7 +16,7 @@ import build_notify_mobile.feature.discovery.generated.resources.connection_fail
 import me.yuriisoft.buildnotify.mobile.ui.components.button.SecondaryButton
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Divider
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
-import me.yuriisoft.buildnotify.mobile.ui.components.icon.StatusIcon
+import me.yuriisoft.buildnotify.mobile.ui.components.icon.BodyIcon
 import me.yuriisoft.buildnotify.mobile.ui.icons.CloseIcon
 import me.yuriisoft.buildnotify.mobile.ui.resource.ImageResource
 import me.yuriisoft.buildnotify.mobile.ui.resource.TextResource
@@ -38,7 +38,7 @@ internal fun ConnectionFailedBody(
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            StatusIcon(
+            BodyIcon(
                 containerColor = error.container,
                 contentColor = error.onContainer,
                 image = closeIcon

@@ -23,7 +23,7 @@ import build_notify_mobile.feature.discovery.generated.resources.discovery_versi
 import me.yuriisoft.buildnotify.mobile.feature.discovery.presentation.DiscoveryUiState
 import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
-import me.yuriisoft.buildnotify.mobile.ui.components.icon.StatusIcon
+import me.yuriisoft.buildnotify.mobile.ui.components.icon.BodyIcon
 import me.yuriisoft.buildnotify.mobile.ui.components.layout.FlatRow
 import me.yuriisoft.buildnotify.mobile.ui.components.layout.FlatRowSlot
 import me.yuriisoft.buildnotify.mobile.ui.resource.ImageResource
@@ -64,7 +64,7 @@ internal fun DiscoveryContent(
                 horizontalSpacing = BuildNotifyTheme.dimensions.spacing.regular,
                 verticalSpacing = BuildNotifyTheme.dimensions.spacing.regular,
             ) {
-                StatusIcon(
+                BodyIcon(
                     modifier = Modifier.slot(0),
                     containerColor = BuildNotifyTheme.colors.primary.container,
                     contentColor = BuildNotifyTheme.colors.primary.onContainer,

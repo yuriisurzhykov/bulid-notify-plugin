@@ -8,4 +8,6 @@ data class IconDimensions(
     val small: Dp,
     val regular: Dp,
     val large: Dp,
+    val xLarge: Dp,
+    val xxLarge: Dp,
 )

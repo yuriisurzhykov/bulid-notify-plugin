@@ -13,7 +13,7 @@ import build_notify_mobile.feature.discovery.generated.resources.Res
 import build_notify_mobile.feature.discovery.generated.resources.connected_title
 import me.yuriisoft.buildnotify.mobile.network.connection.DiscoveredHost
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
-import me.yuriisoft.buildnotify.mobile.ui.components.icon.StatusIcon
+import me.yuriisoft.buildnotify.mobile.ui.components.icon.BodyIcon
 import me.yuriisoft.buildnotify.mobile.ui.icons.CheckIcon
 import me.yuriisoft.buildnotify.mobile.ui.resource.ImageResource
 import me.yuriisoft.buildnotify.mobile.ui.resource.textResource
@@ -30,7 +30,7 @@ internal fun ConnectedBody(host: DiscoveredHost) {
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            StatusIcon(
+            BodyIcon(
                 containerColor = success.container,
                 contentColor = success.onContainer,
                 image = checkIcon,

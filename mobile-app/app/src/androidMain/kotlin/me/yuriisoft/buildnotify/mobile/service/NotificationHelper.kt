@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationCompat
+import me.yuriisoft.buildnotify.mobile.R
 import me.yuriisoft.buildnotify.mobile.data.protocol.BuildResult
 import me.yuriisoft.buildnotify.mobile.service.NotificationHelper.Companion.CHANNEL_BUILD_EVENTS
 import me.yuriisoft.buildnotify.mobile.service.NotificationHelper.Companion.CHANNEL_PERSISTENT
@@ -31,7 +32,7 @@ class NotificationHelper(private val context: Context) {
         message: String = DEFAULT_PERSISTENT_TEXT,
     ): Notification =
         NotificationCompat.Builder(context, CHANNEL_PERSISTENT)
-            .setSmallIcon(android.R.drawable.ic_popup_sync)
+            .setSmallIcon(R.drawable.ic_launcher)
             .setContentTitle(PERSISTENT_TITLE)
             .setContentText(message)
             .setOngoing(true)

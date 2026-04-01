@@ -18,7 +18,7 @@ import build_notify_mobile.feature.discovery.generated.resources.scanning_title
 import me.yuriisoft.buildnotify.mobile.ui.components.button.GhostButton
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Divider
 import me.yuriisoft.buildnotify.mobile.ui.components.foundation.Text
-import me.yuriisoft.buildnotify.mobile.ui.components.icon.StatusIcon
+import me.yuriisoft.buildnotify.mobile.ui.components.icon.BodyIcon
 import me.yuriisoft.buildnotify.mobile.ui.components.progress.DotProgress
 import me.yuriisoft.buildnotify.mobile.ui.components.progress.RingProgress
 import me.yuriisoft.buildnotify.mobile.ui.components.progress.mode.dot.DotProgressMode
@@ -39,7 +39,7 @@ internal fun ScanningBody(onCancel: () -> Unit) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(contentAlignment = Alignment.Center) {
                 RingProgress(mode = RingProgressMode.Pulsing())
-                StatusIcon(
+                BodyIcon(
                     containerColor = primary.container,
                     contentColor = primary.onContainer,
                     image = ImageResource.VectorImage(HubIcon),
