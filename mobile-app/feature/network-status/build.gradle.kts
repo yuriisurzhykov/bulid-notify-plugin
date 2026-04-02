@@ -9,10 +9,10 @@ android {
 kotlin {
     sourceSets {
         commonMain.dependencies {
-            implementation(project(":core:toast"))
-            implementation(project(":core:network"))
-            implementation(project(":core:navigation"))
-            implementation(project(":core:ui"))
+            implementation(projects.core.toast)
+            implementation(projects.core.network)
+            implementation(projects.core.navigation)
+            implementation(projects.core.ui)
         }
 
         commonTest.dependencies {
