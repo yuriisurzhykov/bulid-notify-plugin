@@ -25,6 +25,7 @@ kotlin {
             implementation(project(":feature:build-status"))
             implementation(project(":feature:history"))
             implementation(project(":feature:network-status"))
+            implementation(project(":core:cache"))
             implementation(project(":core:toast"))
             // TODO: This is just a temporary dependency to view all components catalog.
             implementation(project(":feature:ui-catalog"))

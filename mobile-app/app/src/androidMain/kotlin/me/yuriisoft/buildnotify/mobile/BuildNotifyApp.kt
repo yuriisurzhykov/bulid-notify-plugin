@@ -1,6 +1,7 @@
 package me.yuriisoft.buildnotify.mobile
 
 import android.app.Application
+import me.yuriisoft.buildnotify.mobile.core.cache.db.CacheDatabaseFactory
 import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.AndroidNsdDiscovery
 import me.yuriisoft.buildnotify.mobile.tls.AndroidClientIdentityProvider
 import me.yuriisoft.buildnotify.mobile.tls.ClientCertificateManager
@@ -48,6 +49,7 @@ class BuildNotifyApp : Application() {
             clientProvider,
             clientProvider,
             AndroidClientIdentityProvider(clientCertManager),
+            CacheDatabaseFactory(applicationContext),
         )
     }
 }

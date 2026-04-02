@@ -1,0 +1,21 @@
+CREATE TABLE cache_entry (
+    store_name TEXT NOT NULL,
+    key        TEXT NOT NULL,
+    value      TEXT NOT NULL,
+    PRIMARY KEY (store_name, key)
+);
+
+selectByKey:
+SELECT value FROM cache_entry WHERE store_name = ? AND key = ?;
+
+selectAll:
+SELECT value FROM cache_entry WHERE store_name = ?;
+
+upsert:
+INSERT OR REPLACE INTO cache_entry (store_name, key, value) VALUES (?, ?, ?);
+
+deleteByKey:
+DELETE FROM cache_entry WHERE store_name = ? AND key = ?;
+
+deleteAll:
+DELETE FROM cache_entry WHERE store_name = ?;

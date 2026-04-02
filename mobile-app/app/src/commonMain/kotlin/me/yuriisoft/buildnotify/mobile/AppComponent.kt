@@ -5,6 +5,9 @@ import kotlinx.serialization.json.Json
 import me.tatarka.inject.annotations.Component
 import me.tatarka.inject.annotations.IntoSet
 import me.tatarka.inject.annotations.Provides
+import me.yuriisoft.buildnotify.mobile.core.cache.db.CacheDatabase
+import me.yuriisoft.buildnotify.mobile.core.cache.db.CacheDatabaseFactory
+import me.yuriisoft.buildnotify.mobile.core.cache.db.CacheEntryQueries
 import me.yuriisoft.buildnotify.mobile.core.dispatchers.AppDispatchers
 import me.yuriisoft.buildnotify.mobile.core.navigation.Screen
 import me.yuriisoft.buildnotify.mobile.core.navigation.StartRoute
@@ -57,6 +60,7 @@ abstract class AppComponent(
     @get:Provides protected val httpClientProvider: HttpClientProvider,
     @get:Provides protected val serverCertCapture: ServerCertificateCapture,
     @get:Provides protected val clientIdentityProvider: ClientIdentityProvider,
+    @get:Provides protected val cacheDatabaseFactory: CacheDatabaseFactory,
 ) : DiscoveryComponent,
     NetworkComponent,
     BuildStatusComponent,
@@ -74,6 +78,15 @@ abstract class AppComponent(
 
     @Provides
     protected fun json(): Json = Json { ignoreUnknownKeys = true }
+
+    @AppScope
+    @Provides
+    protected fun cacheDatabase(factory: CacheDatabaseFactory): CacheDatabase =
+        factory.create()
+
+    @Provides
+    protected fun cacheEntryQueries(db: CacheDatabase): CacheEntryQueries =
+        db.cacheEntryQueries
 
     @Provides
     protected fun startRoute(

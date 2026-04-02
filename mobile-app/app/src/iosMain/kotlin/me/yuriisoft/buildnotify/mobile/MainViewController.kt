@@ -5,6 +5,7 @@ import me.yuriisoft.buildnotify.mobile.feature.discovery.data.discovery.IosNsdDi
 import me.yuriisoft.buildnotify.mobile.tls.ClientIdentityManager
 import me.yuriisoft.buildnotify.mobile.tls.DarwinHttpClientProvider
 import me.yuriisoft.buildnotify.mobile.tls.IosClientIdentityProvider
+import me.yuriisoft.buildnotify.mobile.core.cache.db.CacheDatabaseFactory
 import me.yuriisoft.buildnotify.mobile.tls.UserDefaultsTrustedServers
 import platform.UIKit.UIViewController
 
@@ -41,6 +42,7 @@ fun MainViewController(): UIViewController {
         clientProvider,
         clientProvider,
         IosClientIdentityProvider(clientIdentityManager),
+        CacheDatabaseFactory(),
     )
 
     return ComposeUIViewController {
